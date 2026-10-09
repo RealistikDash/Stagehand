@@ -25,7 +25,7 @@ lint:
 fmt:
     cargo +nightly fmt
 
-# Build linux-wallpaperengine from the pinned commit into build/lwe (needs network for CEF).
+# Build linux-wallpaperengine (without CEF) from the pinned commit into build/lwe.
 lwe:
     tools/build-lwe.sh "{{lwe_repo}}" "{{lwe_commit}}" build/lwe
 

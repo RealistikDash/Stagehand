@@ -48,7 +48,7 @@ The import formatting options need a nightly `rustfmt`: `rustup toolchain instal
 ## Install for the current user
 
 ```
-just lwe        # optional, scene support; downloads CEF (~150 MB) during the build
+just lwe        # optional, scene support: builds linux-wallpaperengine without its CEF web support
 just install    # builds in release mode, installs to ~/.local, enables the unit and extension
 ```
 
@@ -69,8 +69,10 @@ sudo dnf install $(find target/rpm/RPMS -name '*.rpm')
 `stagehand` installs the daemon, app, renderer, CLI, extension, D-Bus activation file and a
 systemd user unit with a preset, so the daemon starts with every graphical session. On its first
 start it enables the Shell extension. `stagehand-scene-renderer` is linux-wallpaperengine under
-`/usr/libexec/stagehand`. Both builds need network access (crates are vendored by the script, CEF
-is downloaded by linux-wallpaperengine's CMake).
+`/usr/libexec/stagehand`, built with `packaging/lwe-no-cef.patch`, which adds an `ENABLE_CEF`
+option so the Chromium Embedded Framework (only needed for linux-wallpaperengine's own web
+support) is neither downloaded nor bundled. The build script needs network access for `cargo
+vendor` and the linux-wallpaperengine checkout.
 
 ## Command line
 

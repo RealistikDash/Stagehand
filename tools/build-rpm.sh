@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds both RPMs into target/rpm. Usage: build-rpm.sh <lwe-repo> <lwe-commit>
 # Needs: rpm-build, rpmdevtools, cargo, the BuildRequires of both specs, and network (crates.io
-# for vendoring, GitHub for the linux-wallpaperengine checkout and its CEF download).
+# for vendoring and GitHub for the linux-wallpaperengine checkout).
 set -euo pipefail
 REPO="$1"; COMMIT="$2"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -27,10 +27,13 @@ fi
 git -C "$SRC" fetch -q origin
 git -C "$SRC" checkout -q "$COMMIT"
 git -C "$SRC" submodule update --init --recursive -q
-tar -C "$(dirname "$SRC")" --exclude=.git --exclude=build --transform "s|^src|linux-wallpaperengine-$SHORT|" \
+# The spec applies packaging/lwe-no-cef.patch itself; the tarball must be the pristine tree.
+git -C "$SRC" checkout -q -- .
+tar -C "$(dirname "$SRC")" --exclude=.git --exclude=src/build --exclude=src/build-nocef --transform "s|^src|linux-wallpaperengine-$SHORT|" \
     -czf "$TOP/SOURCES/linux-wallpaperengine-$SHORT.tar.gz" src
 
 cp "$ROOT/packaging/"*.spec "$TOP/SPECS/"
+cp "$ROOT/packaging/"*.patch "$TOP/SOURCES/"
 for spec in ${STAGEHAND_RPM_SPECS:-stagehand stagehand-scene-renderer}; do
     echo "== rpmbuild $spec"
     rpmbuild --define "_topdir $TOP" -ba "$TOP/SPECS/$spec.spec"

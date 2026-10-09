@@ -1,0 +1,183 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 11565a1..3102514 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -44,6 +44,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ set(KISSFFT_TEST OFF)
+ set(KISSFFT_TOOLS OFF)
+ 
++option(ENABLE_CEF "Build web wallpaper support with the Chromium Embedded Framework" ON)
++
++if(ENABLE_CEF)
++add_compile_definitions(ENABLE_CEF=1)
+ # Download CEF of specified version for current platform
+ # Specify the CEF distribution version.
+ set(CEF_VERSION "135.0.17+gcbc1c5b+chromium-135.0.7049.52")
+@@ -128,6 +132,11 @@ list(APPEND CEF_CXX_COMPILER_FLAGS -std=c++20)
+ list(APPEND CEF_EXE_LINKER_FLAGS -rdynamic)
+ # remove the vulkan library from the files to copy so it doesn't fail after removing it
+ list(REMOVE_ITEM CEF_BINARY_FILES libvulkan.so.1)
++set(CEF_LINK_LIBRARIES libcef_lib libcef_dll_wrapper)
++else()
++add_compile_definitions(ENABLE_CEF=0)
++set(CEF_LINK_LIBRARIES)
++endif()
+ 
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output)
+ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
+@@ -140,7 +149,9 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+ set(CMAKE_INSTALL_RPATH "\$ORIGIN;\$ORIGIN/lib;\$ORIGIN/lib64")
+ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+ 
++if(ENABLE_CEF)
+ add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
++endif()
+ add_subdirectory(src/External/glslang-WallpaperEngine glslang)
+ add_subdirectory(src/External/SPIRV-Cross-WallpaperEngine spirv-cross)
+ add_subdirectory(src/External/kissfft kissfft)
+@@ -253,12 +264,14 @@ if(NOT WAYLAND_SUPPORT_FOUND AND NOT X11_SUPPORT_FOUND)
+     message(WARNING "No window server detected at build time. You will only be able to preview backgrounds")
+ endif()
+ 
++if(ENABLE_CEF)
+ add_library(ceflib SHARED IMPORTED)
+ set_target_properties(ceflib
+         PROPERTIES IMPORTED_LOCATION ${TARGET_OUTPUT_DIRECTORY}/libcef.so)
+ 
+ ADD_LOGICAL_TARGET(libcef_lib "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
+ PRINT_CEF_CONFIG()
++endif()
+ 
+ # Embed scene-script builtins (builtins.js) into a generated header, so the JS can
+ # live in its own file (lint/syntax-highlight friendly) instead of an inline literal.
+@@ -567,6 +580,10 @@ if(BUILD_TESTING)
+         src/WallpaperEngine/Testing/Cases/PropertyParser.cpp)
+ endif()
+ 
++if(NOT ENABLE_CEF)
++    list(FILTER COMMON_SOURCES EXCLUDE REGEX "WebBrowser/|Wallpapers/CWeb")
++endif()
++
+ add_library(
+     linux-wallpaperengine-lib SHARED
+ 
+@@ -594,8 +611,7 @@ target_link_libraries (linux-wallpaperengine-lib PUBLIC
+     spirv-cross-core
+     spirv-cross-glsl
+     glfw
+-    libcef_lib
+-    libcef_dll_wrapper
++    ${CEF_LINK_LIBRARIES}
+     argparse
+     qjs)
+ 
+@@ -620,8 +636,7 @@ if (BUILD_TESTING)
+         spirv-cross-core
+         spirv-cross-glsl
+         glfw
+-        libcef_lib
+-        libcef_dll_wrapper
++        ${CEF_LINK_LIBRARIES}
+         argparse
+         qjs)
+ endif()
+@@ -673,16 +688,23 @@ target_include_directories(linux-wallpaperengine-lib PUBLIC
+     ${X11_INCLUDES}
+     ${WAYLAND_OUTPUT_DIR})
+ 
++if(ENABLE_CEF)
+ COPY_FILES(linux-wallpaperengine-lib "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
+ COPY_FILES(linux-wallpaperengine-lib "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUTPUT_DIRECTORY}")
++endif()
+ # remove the vulkan lib as chromium includes a broken libvulkan.so.1 with it
+ file(REMOVE "${CEF_BINARY_DIR}/libvulkan.so.1")
+ set_target_properties(linux-wallpaperengine-lib PROPERTIES
+     LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIRECTORY})
+ 
+-add_dependencies(linux-wallpaperengine-lib libcef_dll_wrapper glslang spirv-cross-core spirv-cross-glsl)
++add_dependencies(linux-wallpaperengine-lib glslang spirv-cross-core spirv-cross-glsl)
++if(ENABLE_CEF)
++add_dependencies(linux-wallpaperengine-lib libcef_dll_wrapper)
++endif()
+ # custom version of cef's SET_EXECUTABLE_TARGET_PROPERTIES that fixes C files being compiled with the wrong parameters
++if(ENABLE_CEF)
+ REPLACED_SET_EXECUTABLE_TARGET_PROPERTIES(linux-wallpaperengine-lib)
++endif()
+ 
+ add_executable(linux-wallpaperengine
+     src/main.cpp)
+diff --git a/src/WallpaperEngine/Application/WallpaperApplication.cpp b/src/WallpaperEngine/Application/WallpaperApplication.cpp
+index c9107af..62178fd 100644
+--- a/src/WallpaperEngine/Application/WallpaperApplication.cpp
++++ b/src/WallpaperEngine/Application/WallpaperApplication.cpp
+@@ -325,7 +325,11 @@ void WallpaperApplication::ensureBrowserForProject (const Project& project) {
+     }
+ 
+     if (!this->m_browserContext) {
++#if ENABLE_CEF
+ 	this->m_browserContext = std::make_unique<WebBrowser::WebBrowserContext> (*this);
++#else
++	sLog.exception ("Web wallpapers are not supported in this build (ENABLE_CEF=OFF)");
++#endif
+     }
+ }
+ 
+@@ -536,7 +540,11 @@ void WallpaperApplication::setupBrowser () {
+ 	return;
+     }
+ 
++#if ENABLE_CEF
+     this->m_browserContext = std::make_unique<WebBrowser::WebBrowserContext> (*this);
++#else
++    sLog.exception ("Web wallpapers are not supported in this build (ENABLE_CEF=OFF)");
++#endif
+ }
+ 
+ void WallpaperApplication::takeScreenshot (const std::filesystem::path& filename) const {
+diff --git a/src/WallpaperEngine/Application/WallpaperApplication.h b/src/WallpaperEngine/Application/WallpaperApplication.h
+index 1d1302a..99faafd 100644
+--- a/src/WallpaperEngine/Application/WallpaperApplication.h
++++ b/src/WallpaperEngine/Application/WallpaperApplication.h
+@@ -15,7 +15,14 @@
+ #include "WallpaperEngine/Audio/Drivers/SDLAudioDriver.h"
+ 
+ #include "WallpaperEngine/Input/InputContext.h"
++#if ENABLE_CEF
+ #include "WallpaperEngine/WebBrowser/WebBrowserContext.h"
++#else
++namespace WallpaperEngine::WebBrowser {
++// Web wallpapers are compiled out; the context only exists so the member type is complete.
++class WebBrowserContext final {};
++} // namespace WallpaperEngine::WebBrowser
++#endif
+ 
+ #include "WallpaperEngine/Data/Model/Types.h"
+ #include "WallpaperEngine/Media/MediaSource.h"
+diff --git a/src/WallpaperEngine/Render/CWallpaper.cpp b/src/WallpaperEngine/Render/CWallpaper.cpp
+index d0f7eab..b6d5e84 100644
+--- a/src/WallpaperEngine/Render/CWallpaper.cpp
++++ b/src/WallpaperEngine/Render/CWallpaper.cpp
+@@ -2,7 +2,9 @@
+ #include "WallpaperEngine/Logging/Log.h"
+ #include "WallpaperEngine/Render/Wallpapers/CScene.h"
+ #include "WallpaperEngine/Render/Wallpapers/CVideo.h"
++#if ENABLE_CEF
+ #include "WallpaperEngine/Render/Wallpapers/CWeb.h"
++#endif
+ 
+ #include "WallpaperEngine/Data/Model/Project.h"
+ #include "WallpaperEngine/Data/Model/Wallpaper.h"
+@@ -356,9 +358,13 @@ std::unique_ptr<CWallpaper> CWallpaper::fromWallpaper (
+     }
+ 
+     if (wallpaper.is<Web> ()) {
++#if ENABLE_CEF
+ 	return std::make_unique<WallpaperEngine::Render::Wallpapers::CWeb> (
+ 	    wallpaper, context, audioContext, *browserContext, scalingMode, clampMode
+ 	);
++#else
++	sLog.exception ("Web wallpapers are not supported in this build (ENABLE_CEF=OFF)");
++#endif
+     }
+ 
+     sLog.exception ("Unsupported wallpaper type");

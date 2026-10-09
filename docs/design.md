@@ -32,7 +32,7 @@ Two safety notes discovered on the way:
 
 ### linux-wallpaperengine (scenes)
 
-Built from `Almamu/linux-wallpaperengine` master (commit `b016d7d`, June 2026) with CMake + Ninja in about four minutes. Master now bundles a CEF download (used for its own web support), QuickJS, glslang and SPIRV-Cross; the Fedora packages it needs are listed in the README.
+Built from `Almamu/linux-wallpaperengine` master (commit `b016d7d`, June 2026) with CMake + Ninja in about four minutes. Master bundles QuickJS, glslang and SPIRV-Cross, and unconditionally downloads a prebuilt Chromium Embedded Framework for its own web wallpaper support (1.4 GB unstripped, 220 MB stripped). Stagehand renders web wallpapers itself, so `packaging/lwe-no-cef.patch` adds an `ENABLE_CEF` CMake option and both `just lwe` and the RPM build with it off: no download, no Chromium at runtime, and the scene renderer package shrinks to a few megabytes.
 
 Results on this machine:
 
@@ -198,8 +198,8 @@ Paused renderers are stopped processes: zero CPU by construction, and the GPU re
 baseline. The web wallpaper is the expensive one; WebKit renders its canvas at the monitor's
 refresh rate with no FPS cap, which is listed as a limitation.
 
-Both RPMs build with `just rpm`: `stagehand` (4 MB) and `stagehand-scene-renderer` (97 MB, CEF
-stripped from 1.4 GB to 220 MB).
+Both RPMs build with `just rpm`: `stagehand` (4 MB) and `stagehand-scene-renderer` (built
+without CEF; see §2).
 
 ## 7. Known failures
 

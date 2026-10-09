@@ -10,6 +10,8 @@ fi
 git -C "$SRC" fetch -q origin
 git -C "$SRC" checkout -q "$COMMIT"
 git -C "$SRC" submodule update --init --recursive -q
-cmake -S "$SRC" -B "$OUT/build" -G Ninja -DCMAKE_BUILD_TYPE=Release >/dev/null
+# Web wallpapers are rendered by stagehand-renderer; drop linux-wallpaperengine's CEF (Chromium) build.
+git -C "$SRC" checkout -q -- . && git -C "$SRC" apply "$(dirname "${BASH_SOURCE[0]}")/../packaging/lwe-no-cef.patch"
+cmake -S "$SRC" -B "$OUT/build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CEF=OFF >/dev/null
 ninja -C "$OUT/build"
 echo "linux-wallpaperengine built in $OUT/build/output"
