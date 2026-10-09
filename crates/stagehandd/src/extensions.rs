@@ -8,6 +8,8 @@ use zbus::zvariant::OwnedValue;
 // From GNOME Shell's ExtensionState enum.
 const STATE_ACTIVE: f64 = 1.0;
 const STATE_INACTIVE: f64 = 2.0;
+// Loaded at login but never enabled: the state of a freshly installed extension.
+const STATE_INITIALIZED: f64 = 6.0;
 
 #[zbus::proxy(
     interface = "org.gnome.Shell.Extensions",
@@ -35,7 +37,7 @@ pub async fn ensure_enabled(
 
     match state {
         Some(state) if state == STATE_ACTIVE => Ok(true),
-        Some(state) if state == STATE_INACTIVE => {
+        Some(state) if state == STATE_INACTIVE || state == STATE_INITIALIZED => {
             tracing::info!(uuid, "Enabling the Shell extension.");
 
             proxy.enable_extension(uuid).await
