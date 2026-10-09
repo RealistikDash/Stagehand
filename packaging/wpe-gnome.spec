@@ -102,5 +102,5 @@ appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/%{appid}.metai
 %{_datadir}/gnome-shell/extensions/%{uuid}/
 
 %changelog
-* Thu Oct 09 2026 realistik - 0.1.0-1
+* Fri Oct 09 2026 realistik - 0.1.0-1
 - Initial package.

@@ -31,7 +31,7 @@ tar -C "$(dirname "$SRC")" --exclude=.git --exclude=build --transform "s|^src|li
     -czf "$TOP/SOURCES/linux-wallpaperengine-$SHORT.tar.gz" src
 
 cp "$ROOT/packaging/"*.spec "$TOP/SPECS/"
-for spec in wpe-gnome wpe-gnome-scene-renderer; do
+for spec in ${WPE_RPM_SPECS:-wpe-gnome wpe-gnome-scene-renderer}; do
     echo "== rpmbuild $spec"
     rpmbuild --define "_topdir $TOP" -ba "$TOP/SPECS/$spec.spec"
 done

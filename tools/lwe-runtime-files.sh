@@ -11,4 +11,6 @@ done
 for d in lib lib64 locales swiftshader assets; do
     [ -d "$SRC/$d" ] && cp -a "$SRC/$d" "$DEST/"
 done
+# CEF ships unstripped (libcef.so alone is 1.4 GB); stripping brings the set down to ~300 MB.
+find "$DEST" -type f \( -name '*.so' -o -name '*.so.*' -o -name linux-wallpaperengine \) -exec strip --strip-unneeded {} + 2>/dev/null
 exit 0

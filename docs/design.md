@@ -149,6 +149,34 @@ On every apply the daemon writes `$XDG_CACHE_HOME/wpe-gnome/still-<connector>.pn
 5. UI.
 6. Autorun, pause rules, Blur my Shell verification, polish and measurements.
 
-## 5. Measurements and verification
+## 5. Verification (nested devkit Shell, 2026-10-09)
 
-Filled in at the end of each milestone; see the end of this file.
+Everything below was exercised through `tools/nested.sh`: a `gnome-shell --devkit` instance on a
+private D-Bus session with a private dconf profile, the extension installed into it, and the daemon
+and CLI driving it. Screenshots were taken with the extension's devkit-only `Screenshot` method.
+
+| Check | Result |
+|---|---|
+| Video wallpaper pinned behind the desktop | Yes. The window is minimised, its clone fills the background actor; the overview shows it as the workspace background and lists no renderer window. |
+| Scene wallpaper (linux-wallpaperengine, `--window`) | Yes, after the fix in §5.1. Hu Tao (`2954387038`) renders at monitor size and animates. |
+| Web wallpaper (WebKitGTK) | Yes. Solar System (`793602574`) loads, receives its properties and animates. |
+| Live updates | Screenshot pairs 4 s apart differ for all three kinds (video 34 %, scene 7 %, web 0.4 % of pixels). |
+| Not a window | Not in the overview window list, not in Alt-Tab (`get_tab_list` override), no "is ready" notification (`is_skip_taskbar` override). The renderer never takes focus because mutter denies focus to windows started without a user interaction. |
+| Still image | A real frame (`MetaWindowActor.get_image`) is captured 6 s after pinning and published to `picture-uri`/`picture-uri-dark`; the square Workshop preview is only used until then. |
+| Pause on fullscreen | A fullscreen GTK window on the monitor stops the renderer (`SIGSTOP`, process state `T`, `status` shows `paused ([Fullscreen])`); closing it resumes. |
+| Blur my Shell v72 | Enabled in the nested session. Panel blur takes the wallpaper's colour in both modes: dynamic blur reads the framebuffer, which contains the clone; static blur reads the published still. The overview blur uses BMS's own `BackgroundManager` (container `bms-*`), which the extension skips, so it blurs the still. No JS errors. |
+| Span across monitors | With a second virtual monitor (`--virtual-monitor 1024x640`), one 2304x800 renderer is cloned into both backgrounds with per-monitor offsets and the image is continuous across the seam. |
+| Per-monitor assignment | Switching the second monitor to its own video leaves the first monitor's renderer running. |
+| Daemon restart | Renderers are started behind a gate only after `Pin` was acknowledged; with the extension absent the slot reports "the shell extension is not running" and nothing is spawned. |
+| Hardware decode | `vah264dec`/`vah265dec` exist (rank primary+1) once `mesa-va-drivers-freeworld` is installed and the GStreamer registry cache is refreshed; `playbin3` picks them. All seven workshop videos are H.264 except one MPEG-4 Part 2. |
+
+### 5.1 Things that only showed up on the real Shell
+
+- **Minimising before the first show freezes the surface.** The first version minimised the renderer window in `window-created`, before mutter had shown it once. The window then kept its first buffer forever (a 640x480 GLFW frame for scenes, which the clone stretched), and never received another frame callback. Minimising in `shown`, as Hanabi does, fixes it. The daemon still pins the PID before the window exists, so the window never appears as a window.
+- **`Meta.Window.get_pid()`** works for Wayland clients and identifies the gated process.
+- **dconf profiles need D-Bus-safe names.** `user-db:wpe-gnome-nested` produced a GDBus assertion and a hang inside `g_settings_sync()`; the profile is now `wpe_gnome_nested`. That hang also led to the rule that GSettings is only ever touched on a blocking thread with a timeout.
+- **`async-process` drops stdio flags on conversion** from a `std::process::Command`; the pipes must be configured on the async command.
+- **A GApplication id must differ from the daemon's bus name**, otherwise GTK tries to activate the daemon as an application (`org.gtk.Actions` error). The daemon is `io.github.realistik.WpeGnome.Daemon`.
+- **`inotify` sees every read of the media file.** The watcher only reacts to create, remove, rename and data changes.
+
+## 6. Measurements

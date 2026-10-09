@@ -9,7 +9,7 @@ Summary:        linux-wallpaperengine build used by wpe-gnome for scene wallpape
 # linux-wallpaperengine is GPL-3.0-only; it runs as a separate process started by wpe-gnome.
 License:        GPL-3.0-only
 URL:            https://github.com/Almamu/linux-wallpaperengine
-# Recursive checkout of %{commit} including submodules (tools/build-rpm.sh creates it).
+# Recursive checkout of the pinned commit including submodules (tools/build-rpm.sh creates it).
 Source0:        linux-wallpaperengine-%{shortcommit}.tar.gz
 
 BuildRequires:  cmake >= 3.12
@@ -19,7 +19,7 @@ BuildRequires:  glew-devel
 BuildRequires:  freeglut-devel
 BuildRequires:  SDL2-devel
 BuildRequires:  mpv-libs-devel
-BuildRequires:  ffmpeg-free-devel
+BuildRequires:  (ffmpeg-free-devel or ffmpeg-devel)
 BuildRequires:  pulseaudio-libs-devel
 BuildRequires:  fftw-devel
 BuildRequires:  gmp-devel
@@ -68,6 +68,8 @@ done
 for d in lib lib64 locales swiftshader assets; do
     [ -d "$tools_dir/$d" ] && cp -a "$tools_dir/$d" %{buildroot}%{lwedir}/
 done
+# rpmbuild's own strip pass skips files it does not consider build output; strip CEF explicitly.
+find %{buildroot}%{lwedir} -type f \( -name '*.so' -o -name '*.so.*' -o -name linux-wallpaperengine \) -exec strip --strip-unneeded {} +
 exit 0
 
 %files
@@ -75,5 +77,5 @@ exit 0
 %{lwedir}/
 
 %changelog
-* Thu Oct 09 2026 realistik - 0.1.0-1.gitb016d7d
+* Fri Oct 09 2026 realistik - 0.1.0-1.gitb016d7d
 - Initial package.

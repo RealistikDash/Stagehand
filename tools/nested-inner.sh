@@ -18,7 +18,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-gnome-shell --devkit >"$WPE_LOG" 2>&1 &
+# shellcheck disable=SC2086
+gnome-shell --devkit ${WPE_SHELL_ARGS:-} >"$WPE_LOG" 2>&1 &
 SHELL_PID=$!
 
 for _ in $(seq 1 60); do
@@ -39,7 +40,7 @@ sleep 1
 gnome-extensions info "$WPE_UUID" | grep -E 'State|Enabled' || true
 
 SCENE="${WPE_SCENE_RENDERER:-$HOME/.local/libexec/wpe-gnome/lwe/linux-wallpaperengine}"
-RUST_LOG="${RUST_LOG:-debug}" "$WPE_ROOT/target/debug/wpe-gnomed" --scene-renderer "$SCENE" >"$WPE_LOG.daemon" 2>&1 &
+RUST_LOG="${RUST_LOG:-debug}" "$WPE_ROOT/target/${WPE_PROFILE:-debug}/wpe-gnomed" --scene-renderer "$SCENE" >"$WPE_LOG.daemon" 2>&1 &
 DAEMON_PID=$!
 sleep 2
 echo "Nested Shell pid $SHELL_PID, daemon pid $DAEMON_PID, Wayland $WAYLAND_DISPLAY, log $WPE_LOG"

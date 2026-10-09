@@ -1,6 +1,7 @@
 //! `wpe-gnomed`: the wpe-gnome daemon. Runs as a systemd user service bound to the graphical
 //! session and owns everything that outlives the UI.
 
+mod audio;
 mod background;
 mod clock;
 mod dbus;
@@ -36,6 +37,7 @@ use wpe_gnome_core::steam::SteamLayout;
 use wpe_gnome_core::steam::WorkshopRepository;
 use wpe_gnome_ipc::names;
 
+use crate::audio::AudioWatcher;
 use crate::background::GSettingsBackground;
 use crate::clock::SystemClock;
 use crate::dbus::DaemonInterface;
@@ -176,6 +178,14 @@ async fn run(cli: Cli) -> Result<(), DaemonError> {
         names::DAEMON_OBJECT_PATH,
         notification_receiver,
     )));
+    let audio_watcher = match AudioWatcher::start(events.clone()) {
+        Ok(watcher) => Some(watcher),
+        Err(error) => {
+            tracing::warn!(error = %error, "Other applications' audio will not be detected.");
+
+            None
+        }
+    };
     let library_watcher = match LibraryWatcher::new(&watch_dirs, events.clone()) {
         Ok(watcher) => Some(watcher),
         Err(error) => {
@@ -200,6 +210,7 @@ async fn run(cli: Cli) -> Result<(), DaemonError> {
     Service::new(ctx, config, event_receiver).run().await;
     tracing::info!("Service stopped.");
     drop(library_watcher);
+    drop(audio_watcher);
     drop(tasks);
     connection.release_name(names::DAEMON_BUS_NAME).await?;
 
