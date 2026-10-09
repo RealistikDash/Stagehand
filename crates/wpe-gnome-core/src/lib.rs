@@ -6,5 +6,6 @@ pub mod model;
 pub mod ports;
 pub mod project;
 pub mod protocol;
+pub mod service;
 pub mod steam;
 pub mod still;

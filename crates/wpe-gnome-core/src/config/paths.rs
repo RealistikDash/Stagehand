@@ -18,6 +18,9 @@ pub struct Paths {
     pub cache_dir: PathBuf,
     pub runtime_dir: PathBuf,
     pub data_dir: PathBuf,
+    /// Where `just install` puts helper programs such as linux-wallpaperengine.
+    pub libexec_dir: PathBuf,
+    pub bin_dir: PathBuf,
 }
 
 impl Paths {
@@ -35,6 +38,8 @@ impl Paths {
             cache_dir: cache_home.join(APP_DIR),
             runtime_dir: runtime_dir.join(APP_DIR),
             data_dir: data_home.join(APP_DIR),
+            libexec_dir: home.join(".local/libexec").join(APP_DIR),
+            bin_dir: home.join(".local/bin"),
             home,
         })
     }

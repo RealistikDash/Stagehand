@@ -33,6 +33,11 @@ pub struct MonitorKey(String);
 
 impl MonitorKey {
     #[must_use]
+    pub fn new(key: impl Into<String>) -> Self {
+        Self(key.into())
+    }
+
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }

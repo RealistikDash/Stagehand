@@ -10,9 +10,12 @@ license.workspace = true
 clap.workspace = true
 thiserror.workspace = true
 serde_json.workspace = true
+smol.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 wpe-gnome-core.workspace = true
+wpe-gnome-ipc.workspace = true
+zbus.workspace = true
 
 [lints]
 workspace = true

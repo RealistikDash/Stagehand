@@ -1,6 +1,9 @@
 use std::path::Path;
 use std::path::PathBuf;
 
+use serde::Deserialize;
+use serde::Serialize;
+
 use crate::model::BrokenProject;
 use crate::model::LibraryItem;
 use crate::model::WallpaperId;
@@ -10,7 +13,7 @@ use crate::steam::layout::SteamLayout;
 
 const PROJECT_FILE: &str = "project.json";
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Library {
     pub items: Vec<LibraryItem>,
     pub assets_dir: Option<PathBuf>,

@@ -1,0 +1,9 @@
+{
+  "uuid": "wpe-gnome@realistik.github.io",
+  "name": "wpe-gnome",
+  "description": "Pins wpe-gnome renderer windows into the desktop background so Wallpaper Engine wallpapers become the real background.",
+  "shell-version": ["50"],
+  "session-modes": ["user"],
+  "url": "https://github.com/realistik/wpe-gnome",
+  "version-name": "0.1.0"
+}

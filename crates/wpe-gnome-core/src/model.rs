@@ -3,6 +3,7 @@ mod ids;
 mod monitor;
 mod property;
 mod settings;
+mod status;
 mod wallpaper;
 
 pub use assignment::AssignmentLayout;
@@ -31,6 +32,9 @@ pub use settings::PauseTrigger;
 pub use settings::ScalingMode;
 pub use settings::Settings;
 pub use settings::Volume;
+pub use status::SlotState;
+pub use status::SlotStatus;
+pub use status::Status;
 pub use wallpaper::BrokenProject;
 pub use wallpaper::LibraryItem;
 pub use wallpaper::Support;
