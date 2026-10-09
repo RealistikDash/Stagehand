@@ -2,6 +2,9 @@
 
 Steam Wallpaper Engine wallpapers as the real GNOME desktop background, on Wayland.
 
+<img width="3440" height="1440" alt="image" src="https://github.com/user-attachments/assets/698b0ef5-ed50-4ee0-bd8b-3dee67046cdc" />
+
+
 Scene, video and web wallpapers from your Workshop subscriptions run behind every window, show in
 the overview and workspace switcher, never appear in Alt-Tab or the dash, follow each monitor,
 pause when covered, locked or idle, and come back at login.
