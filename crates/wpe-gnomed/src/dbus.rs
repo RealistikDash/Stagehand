@@ -44,11 +44,13 @@ impl DaemonInterface {
         &self,
         build: impl FnOnce(Reply<Result<(), ServiceError>>) -> Request,
     ) -> fdo::Result<()> {
-        self.request(build).await?.map_err(service_error)
+        self.request(build)
+            .await?
+            .map_err(|error| service_error(&error))
     }
 }
 
-fn service_error(error: ServiceError) -> fdo::Error {
+fn service_error(error: &ServiceError) -> fdo::Error {
     match error {
         ServiceError::UnknownWallpaper(_) | ServiceError::NothingToRestore => {
             fdo::Error::InvalidArgs(error.to_string())

@@ -3,7 +3,9 @@
 //! process group, which is what pause (`SIGSTOP`) and termination signal.
 
 use std::ffi::OsString;
+use std::future::Future;
 use std::os::unix::process::CommandExt;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 use std::time::Duration;
@@ -61,9 +63,9 @@ impl ProcessLauncher {
     }
 }
 
-fn scene_argv(binary: &PathBuf, scene: &SceneLaunch, plan: &LaunchPlan) -> Vec<OsString> {
+fn scene_argv(binary: &Path, scene: &SceneLaunch, plan: &LaunchPlan) -> Vec<OsString> {
     let mut argv: Vec<OsString> = vec![
-        binary.clone().into(),
+        binary.to_path_buf().into(),
         "--assets-dir".into(),
         scene.assets_dir.clone().into(),
         "--window".into(),
@@ -108,7 +110,16 @@ fn scaling_argument(scaling: ScalingMode) -> &'static str {
 impl RendererLauncher for ProcessLauncher {
     type Handle = ProcessHandle;
 
-    async fn launch(&mut self, plan: &LaunchPlan) -> Result<ProcessHandle, RendererError> {
+    fn launch(
+        &mut self,
+        plan: &LaunchPlan,
+    ) -> impl Future<Output = Result<ProcessHandle, RendererError>> {
+        std::future::ready(self.spawn_gated(plan))
+    }
+}
+
+impl ProcessLauncher {
+    fn spawn_gated(&self, plan: &LaunchPlan) -> Result<ProcessHandle, RendererError> {
         let argv = self.argv(plan);
         let mut command = std::process::Command::new("/bin/sh");
         command
@@ -206,7 +217,13 @@ impl RendererHandle for ProcessHandle {
 
     /// Closes stdin (our renderer exits on EOF), sends `SIGTERM` to the group, and escalates to
     /// `SIGKILL` after a grace period.
-    async fn terminate(&mut self) -> Result<(), RendererError> {
+    fn terminate(&mut self) -> impl Future<Output = Result<(), RendererError>> {
+        std::future::ready(self.terminate_now())
+    }
+}
+
+impl ProcessHandle {
+    fn terminate_now(&mut self) -> Result<(), RendererError> {
         self.stdin = None;
         let _ = self.signal_group(Signal::CONT);
         let result = self.signal_group(Signal::TERM);

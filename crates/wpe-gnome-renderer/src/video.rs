@@ -92,7 +92,7 @@ fn handle_message(pipeline: &gst::Element, message: &gst::Message, looped_once: 
         }
         MessageView::Error(error) => {
             tracing::error!(
-                source = ?error.src().map(|source| source.path_string()),
+                source = ?error.src().map(GstObjectExt::path_string),
                 error = %error.error(),
                 debug = ?error.debug(),
                 "Video pipeline error."

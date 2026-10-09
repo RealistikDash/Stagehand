@@ -43,7 +43,7 @@ impl LibraryWatcher {
             notify::recommended_watcher(move |result: notify::Result<notify::Event>| {
                 match result {
                     // Renderers read the media files constantly; only structural changes matter.
-                    Ok(event) if is_structural(&event.kind) => {
+                    Ok(event) if is_structural(event.kind) => {
                         // NOTE: A full or closed channel only means the debounce task already knows.
                         let _ = raw_sender.try_send(());
                     }
@@ -70,7 +70,7 @@ impl LibraryWatcher {
     }
 }
 
-fn is_structural(kind: &notify::EventKind) -> bool {
+fn is_structural(kind: notify::EventKind) -> bool {
     matches!(
         kind,
         notify::EventKind::Create(_)

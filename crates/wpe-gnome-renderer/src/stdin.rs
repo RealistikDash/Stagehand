@@ -16,13 +16,13 @@ pub enum StdinEvent {
 pub fn start() -> Receiver<StdinEvent> {
     let (sender, receiver) = async_channel::unbounded();
 
-    std::thread::Builder::new()
+    let spawned = std::thread::Builder::new()
         .name("stdin".to_owned())
-        .spawn(move || read_loop(&sender))
-        .map(|_| ())
-        .unwrap_or_else(|error| {
-            tracing::error!(error = %error, "Could not start stdin reader.");
-        });
+        .spawn(move || read_loop(&sender));
+
+    if let Err(error) = spawned {
+        tracing::error!(error = %error, "Could not start stdin reader.");
+    }
 
     receiver
 }

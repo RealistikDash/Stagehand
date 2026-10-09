@@ -1,4 +1,4 @@
-//! The `org.gnome.desktop.background` keys, through GSettings.
+//! The `org.gnome.desktop.background` keys, through `GSettings`.
 //!
 //! dconf writes are synchronous calls to the dconf service. They run on a blocking thread with a
 //! timeout so that a wedged settings service can never stall the service loop.

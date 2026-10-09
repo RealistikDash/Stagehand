@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=io.github.realistik.WpeGnome.Daemon
+Exec=@BINDIR@/wpe-gnomed
+SystemdService=wpe-gnomed.service

@@ -1,4 +1,4 @@
-pub const DAEMON_BUS_NAME: &str = "io.github.realistik.WpeGnome";
+pub const DAEMON_BUS_NAME: &str = "io.github.realistik.WpeGnome.Daemon";
 pub const DAEMON_OBJECT_PATH: &str = "/io/github/realistik/WpeGnome";
 pub const DAEMON_INTERFACE: &str = "io.github.realistik.WpeGnome.Daemon";
 

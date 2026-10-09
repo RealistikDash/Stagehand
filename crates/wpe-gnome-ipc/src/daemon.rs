@@ -23,7 +23,7 @@ pub fn decode<T: DeserializeOwned>(text: &str) -> Result<T, IpcError> {
 /// `PropertyValues`.
 #[zbus::proxy(
     interface = "io.github.realistik.WpeGnome.Daemon",
-    default_service = "io.github.realistik.WpeGnome",
+    default_service = "io.github.realistik.WpeGnome.Daemon",
     default_path = "/io/github/realistik/WpeGnome"
 )]
 pub trait Daemon {

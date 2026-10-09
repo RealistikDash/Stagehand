@@ -4,6 +4,7 @@ use std::io::Write;
 
 use thiserror::Error;
 use wpe_gnome_core::config::Config;
+use wpe_gnome_core::model::ConnectorName;
 use wpe_gnome_core::model::MonitorInfo;
 use wpe_gnome_core::model::ScalingMode;
 use wpe_gnome_core::model::SlotState;
@@ -58,7 +59,7 @@ pub fn status() -> Result<(), DaemonCommandError> {
         )?;
 
         for slot in &status.slots {
-            let connectors: Vec<&str> = slot.connectors.iter().map(|c| c.as_str()).collect();
+            let connectors: Vec<&str> = slot.connectors.iter().map(ConnectorName::as_str).collect();
             let wallpaper = slot
                 .wallpaper
                 .as_ref()

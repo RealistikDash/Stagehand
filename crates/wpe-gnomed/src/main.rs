@@ -4,6 +4,7 @@
 mod background;
 mod clock;
 mod dbus;
+mod extensions;
 mod launcher;
 mod monitors;
 mod session;
@@ -46,6 +47,7 @@ use crate::watcher::LibraryWatcher;
 const TICK: Duration = Duration::from_secs(5);
 const RENDERER_BINARY: &str = "wpe-gnome-renderer";
 const SCENE_BINARY: &str = "lwe/linux-wallpaperengine";
+const SYSTEM_LIBEXEC_DIR: &str = "/usr/libexec/wpe-gnome";
 
 #[derive(Debug, Parser)]
 #[command(
@@ -57,9 +59,13 @@ struct Cli {
     /// Path of the GTK renderer. Defaults to `wpe-gnome-renderer` next to this executable.
     #[arg(long)]
     renderer: Option<PathBuf>,
-    /// Path of linux-wallpaperengine. Defaults to `~/.local/libexec/wpe-gnome/lwe/linux-wallpaperengine`.
+    /// Path of linux-wallpaperengine. Defaults to the per-user install under
+    /// `~/.local/libexec/wpe-gnome`, then the package install under `/usr/libexec/wpe-gnome`.
     #[arg(long)]
     scene_renderer: Option<PathBuf>,
+    /// Do not enable the Shell extension automatically when it is installed but off.
+    #[arg(long)]
+    no_enable_extension: bool,
 }
 
 #[derive(Debug, Error)]
@@ -119,9 +125,15 @@ async fn run(cli: Cli) -> Result<(), DaemonError> {
         .map_err(|error| DaemonError::Directory(paths.cache_dir.clone(), error))?;
 
     let renderer_binary = cli.renderer.unwrap_or_else(|| sibling(RENDERER_BINARY));
-    let scene_binary = cli
-        .scene_renderer
-        .unwrap_or_else(|| paths.libexec_dir.join(SCENE_BINARY));
+    let scene_binary = cli.scene_renderer.unwrap_or_else(|| {
+        let user = paths.libexec_dir.join(SCENE_BINARY);
+
+        if user.exists() {
+            user
+        } else {
+            PathBuf::from(SYSTEM_LIBEXEC_DIR).join(SCENE_BINARY)
+        }
+    });
     tracing::info!(renderer = %renderer_binary.display(), scene = %scene_binary.display(), "Renderer binaries.");
 
     let (events, event_receiver) = async_channel::unbounded::<Event>();
@@ -138,6 +150,13 @@ async fn run(cli: Cli) -> Result<(), DaemonError> {
         .await?;
     connection.request_name(names::DAEMON_BUS_NAME).await?;
     tracing::info!(name = names::DAEMON_BUS_NAME, "Acquired bus name.");
+
+    if !cli.no_enable_extension {
+        match extensions::ensure_enabled(&connection, names::EXTENSION_UUID).await {
+            Ok(active) => tracing::info!(active, "Checked the Shell extension."),
+            Err(error) => tracing::warn!(error = %error, "Could not check the Shell extension."),
+        }
+    }
 
     let monitors = MutterMonitors::new(&connection).await?;
     let pinner = ShellPinner::new(&connection).await?;
