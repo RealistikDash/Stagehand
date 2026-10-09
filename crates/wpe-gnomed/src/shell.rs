@@ -1,5 +1,7 @@
 //! The GNOME Shell extension, reached through the object it exports on `org.gnome.Shell`.
 
+use std::path::Path;
+
 use async_channel::Sender;
 use futures_lite::StreamExt;
 use wpe_gnome_core::model::ConnectorName;
@@ -47,7 +49,11 @@ impl ShellPinner {
                         continue;
                     };
 
-                    if events.send(Event::WindowPinned(ProcessId::new(args.pid))).await.is_err() {
+                    if events
+                        .send(Event::WindowPinned(ProcessId::new(args.pid)))
+                        .await
+                        .is_err()
+                    {
                         break;
                     }
                 }
@@ -62,7 +68,11 @@ impl ShellPinner {
                         continue;
                     };
 
-                    if events.send(Event::WindowLost(ProcessId::new(args.pid))).await.is_err() {
+                    if events
+                        .send(Event::WindowLost(ProcessId::new(args.pid)))
+                        .await
+                        .is_err()
+                    {
                         break;
                     }
                 }
@@ -165,7 +175,11 @@ impl BackgroundPinner for ShellPinner {
         match self.proxy.version().await {
             Ok(version) if version == names::SHELL_INTERFACE_VERSION => true,
             Ok(version) => {
-                tracing::error!(version, expected = names::SHELL_INTERFACE_VERSION, "Shell extension version mismatch.");
+                tracing::error!(
+                    version,
+                    expected = names::SHELL_INTERFACE_VERSION,
+                    "Shell extension version mismatch."
+                );
 
                 false
             }
@@ -188,10 +202,27 @@ impl BackgroundPinner for ShellPinner {
     }
 
     async fn set_visible(&mut self, pid: ProcessId, visible: bool) -> Result<(), PinError> {
-        self.proxy.set_visible(pid.get(), visible).await.map_err(call_error)
+        self.proxy
+            .set_visible(pid.get(), visible)
+            .await
+            .map_err(call_error)
     }
 
     async fn set_dim(&mut self, pid: ProcessId, dim: DimLevel) -> Result<(), PinError> {
-        self.proxy.set_dim(pid.get(), dim.fraction()).await.map_err(call_error)
+        self.proxy
+            .set_dim(pid.get(), dim.fraction())
+            .await
+            .map_err(call_error)
+    }
+
+    async fn capture_still(&mut self, pid: ProcessId, path: &Path) -> Result<(), PinError> {
+        let filename = path
+            .to_str()
+            .ok_or_else(|| PinError::Call("non-UTF-8 path".to_owned()))?;
+
+        self.proxy
+            .capture_still(pid.get(), filename)
+            .await
+            .map_err(call_error)
     }
 }

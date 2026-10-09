@@ -33,9 +33,13 @@ pub enum DaemonCommandError {
 }
 
 async fn proxy() -> Result<DaemonProxy<'static>, DaemonCommandError> {
-    let connection = zbus::Connection::session().await.map_err(DaemonCommandError::Connect)?;
+    let connection = zbus::Connection::session()
+        .await
+        .map_err(DaemonCommandError::Connect)?;
 
-    DaemonProxy::new(&connection).await.map_err(DaemonCommandError::Connect)
+    DaemonProxy::new(&connection)
+        .await
+        .map_err(DaemonCommandError::Connect)
 }
 
 pub fn status() -> Result<(), DaemonCommandError> {
@@ -43,23 +47,44 @@ pub fn status() -> Result<(), DaemonCommandError> {
         let status: Status = wpe_gnome_ipc::decode(&proxy().await?.get_status().await?)?;
         let mut out = std::io::stdout().lock();
 
-        writeln!(out, "Shell extension: {}", if status.shell_ready { "ready" } else { "not running" })?;
+        writeln!(
+            out,
+            "Shell extension: {}",
+            if status.shell_ready {
+                "ready"
+            } else {
+                "not running"
+            }
+        )?;
 
         for slot in &status.slots {
             let connectors: Vec<&str> = slot.connectors.iter().map(|c| c.as_str()).collect();
-            let wallpaper = slot.wallpaper.as_ref().map_or("-".to_owned(), ToString::to_string);
+            let wallpaper = slot
+                .wallpaper
+                .as_ref()
+                .map_or("-".to_owned(), ToString::to_string);
             let state = match &slot.state {
                 SlotState::Idle => "idle".to_owned(),
                 SlotState::Starting => "starting".to_owned(),
                 SlotState::Running => "running".to_owned(),
                 SlotState::Paused { reasons, hidden } => {
-                    format!("paused ({reasons:?}{})", if *hidden { ", hidden" } else { "" })
+                    format!(
+                        "paused ({reasons:?}{})",
+                        if *hidden { ", hidden" } else { "" }
+                    )
                 }
                 SlotState::Failed { message } => format!("failed: {message}"),
             };
             let pid = slot.pid.map_or("-".to_owned(), |pid| pid.to_string());
 
-            writeln!(out, "{:<16} {:<28} pid {:<8} {}", connectors.join("+"), wallpaper, pid, state)?;
+            writeln!(
+                out,
+                "{:<16} {:<28} pid {:<8} {}",
+                connectors.join("+"),
+                wallpaper,
+                pid,
+                state
+            )?;
         }
 
         Ok(())
@@ -68,7 +93,8 @@ pub fn status() -> Result<(), DaemonCommandError> {
 
 pub fn monitors() -> Result<(), DaemonCommandError> {
     smol::block_on(async {
-        let monitors: Vec<MonitorInfo> = wpe_gnome_ipc::decode(&proxy().await?.get_monitors().await?)?;
+        let monitors: Vec<MonitorInfo> =
+            wpe_gnome_ipc::decode(&proxy().await?.get_monitors().await?)?;
         let mut out = std::io::stdout().lock();
 
         for monitor in &monitors {

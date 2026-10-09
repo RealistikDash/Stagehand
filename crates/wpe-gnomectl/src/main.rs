@@ -80,9 +80,13 @@ fn main() -> ExitCode {
         Command::Paths => commands::paths().map_err(Into::into),
         Command::Status => daemon::status().map_err(Into::into),
         Command::Monitors => daemon::monitors().map_err(Into::into),
-        Command::Apply { wallpaper, monitor, span, scaling } => {
-            daemon::apply(&wallpaper, monitor.as_deref(), span, scaling.as_deref()).map_err(Into::into)
-        }
+        Command::Apply {
+            wallpaper,
+            monitor,
+            span,
+            scaling,
+        } => daemon::apply(&wallpaper, monitor.as_deref(), span, scaling.as_deref())
+            .map_err(Into::into),
         Command::Stop => daemon::stop().map_err(Into::into),
         Command::Rescan => daemon::rescan().map_err(Into::into),
         Command::Config => daemon::config().map_err(Into::into),

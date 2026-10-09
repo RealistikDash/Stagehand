@@ -62,7 +62,9 @@ pub async fn watch(
     }
 
     if let Ok(status) = presence.presence_status().await {
-        let _ = events.send(Event::SessionIdle(status == PRESENCE_STATUS_IDLE)).await;
+        let _ = events
+            .send(Event::SessionIdle(status == PRESENCE_STATUS_IDLE))
+            .await;
     }
 
     let mut lock_stream = screensaver.receive_active_changed().await?;

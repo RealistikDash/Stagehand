@@ -48,7 +48,11 @@ const RENDERER_BINARY: &str = "wpe-gnome-renderer";
 const SCENE_BINARY: &str = "lwe/linux-wallpaperengine";
 
 #[derive(Debug, Parser)]
-#[command(name = "wpe-gnomed", about = "Wallpaper Engine wallpapers on GNOME: the daemon", version)]
+#[command(
+    name = "wpe-gnomed",
+    about = "Wallpaper Engine wallpapers on GNOME: the daemon",
+    version
+)]
 struct Cli {
     /// Path of the GTK renderer. Defaults to `wpe-gnome-renderer` next to this executable.
     #[arg(long)]
@@ -93,10 +97,16 @@ fn initialise_logging() {
     // stderr is.
     match tracing_journald::layer() {
         Ok(journal) if std::env::var_os("JOURNAL_STREAM").is_some() => {
-            tracing_subscriber::registry().with(filter).with(journal).init();
+            tracing_subscriber::registry()
+                .with(filter)
+                .with(journal)
+                .init();
         }
         Ok(_) | Err(_) => {
-            tracing_subscriber::fmt().with_env_filter(filter).with_writer(std::io::stderr).init();
+            tracing_subscriber::fmt()
+                .with_env_filter(filter)
+                .with_writer(std::io::stderr)
+                .init();
         }
     }
 }
@@ -121,7 +131,10 @@ async fn run(cli: Cli) -> Result<(), DaemonError> {
 
     connection
         .object_server()
-        .at(names::DAEMON_OBJECT_PATH, DaemonInterface::new(events.clone()))
+        .at(
+            names::DAEMON_OBJECT_PATH,
+            DaemonInterface::new(events.clone()),
+        )
         .await?;
     connection.request_name(names::DAEMON_BUS_NAME).await?;
     tracing::info!(name = names::DAEMON_BUS_NAME, "Acquired bus name.");

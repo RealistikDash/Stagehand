@@ -27,7 +27,11 @@ fn open() -> Result<gio::Settings, StillError> {
         .lookup(SCHEMA, true)
         .ok_or_else(|| StillError::Read(format!("schema {SCHEMA} is not installed")))?;
 
-    Ok(gio::Settings::new_full(&schema, None::<&gio::SettingsBackend>, None))
+    Ok(gio::Settings::new_full(
+        &schema,
+        None::<&gio::SettingsBackend>,
+        None,
+    ))
 }
 
 async fn with_timeout<T: Send + 'static>(
@@ -37,7 +41,9 @@ async fn with_timeout<T: Send + 'static>(
     let timeout = async {
         smol::Timer::after(TIMEOUT).await;
 
-        Err(describe("the settings service did not answer in time".to_owned()))
+        Err(describe(
+            "the settings service did not answer in time".to_owned(),
+        ))
     };
 
     smol::unblock(work).or(timeout).await

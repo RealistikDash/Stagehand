@@ -11,6 +11,7 @@ pub trait Shell {
     fn unpin(&self, pid: u32) -> zbus::Result<()>;
     fn set_visible(&self, pid: u32, visible: bool) -> zbus::Result<()>;
     fn set_dim(&self, pid: u32, level: f64) -> zbus::Result<()>;
+    fn capture_still(&self, pid: u32, filename: &str) -> zbus::Result<()>;
 
     #[zbus(property)]
     fn version(&self) -> zbus::Result<u32>;

@@ -11,7 +11,10 @@ use crate::stdin::StdinEvent;
 use crate::video::VideoContent;
 use crate::web::WebContent;
 
-pub fn build(application: &gtk4::Application, arguments: &RendererArguments) -> Result<(), ContentError> {
+pub fn build(
+    application: &gtk4::Application,
+    arguments: &RendererArguments,
+) -> Result<(), ContentError> {
     let content: Box<dyn Content> = match &arguments.content {
         RendererContent::Video { file } => Box::new(VideoContent::new(file, arguments)?),
         RendererContent::Web { index } => Box::new(WebContent::new(index, arguments)?),

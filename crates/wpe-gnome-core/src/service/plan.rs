@@ -61,7 +61,10 @@ fn span_slot(assignments: &Assignments, monitors: &[MonitorInfo]) -> Option<Desi
     let bounds = rectangles.fold(first, Rectangle::union);
 
     Some(DesiredSlot {
-        connectors: monitors.iter().map(|monitor| monitor.identity.connector.clone()).collect(),
+        connectors: monitors
+            .iter()
+            .map(|monitor| monitor.identity.connector.clone())
+            .collect(),
         size: bounds.size(),
         choice,
     })
@@ -69,7 +72,10 @@ fn span_slot(assignments: &Assignments, monitors: &[MonitorInfo]) -> Option<Desi
 
 /// Project defaults overlaid with the user's saved values, for renderers that take the full set.
 #[must_use]
-pub fn merged_properties(wallpaper: &Wallpaper, overrides: Option<&PropertyValues>) -> PropertyValues {
+pub fn merged_properties(
+    wallpaper: &Wallpaper,
+    overrides: Option<&PropertyValues>,
+) -> PropertyValues {
     let mut values: PropertyValues = wallpaper
         .properties
         .iter()
@@ -82,7 +88,11 @@ pub fn merged_properties(wallpaper: &Wallpaper, overrides: Option<&PropertyValue
         .collect();
 
     if let Some(overrides) = overrides {
-        values.extend(overrides.iter().map(|(key, value)| (key.clone(), value.clone())));
+        values.extend(
+            overrides
+                .iter()
+                .map(|(key, value)| (key.clone(), value.clone())),
+        );
     }
 
     values
@@ -96,7 +106,10 @@ pub fn launch_plan(
     slot: &DesiredSlot,
 ) -> Result<LaunchPlan, ServiceError> {
     if let Support::Unsupported(reason) = &wallpaper.support {
-        return Err(ServiceError::Unsupported(wallpaper.id.clone(), describe_reason(reason)));
+        return Err(ServiceError::Unsupported(
+            wallpaper.id.clone(),
+            describe_reason(reason),
+        ));
     }
 
     let Some(entry) = wallpaper.entry_file.clone() else {
@@ -106,7 +119,11 @@ pub fn launch_plan(
         ));
     };
     let scaling = slot.choice.scaling.unwrap_or(settings.scaling);
-    let label = format!("wpe-gnome {} {}", wallpaper.id, connectors_label(&slot.connectors));
+    let label = format!(
+        "wpe-gnome {} {}",
+        wallpaper.id,
+        connectors_label(&slot.connectors)
+    );
     let kind = match wallpaper.kind {
         WallpaperKind::Scene => {
             let Some(assets_dir) = assets_dir else {
@@ -218,7 +235,8 @@ pub fn pause_reasons(
         .iter()
         .map(|connector| occlusion.get(connector).copied().unwrap_or_default())
         .collect();
-    let all_fullscreen = !states.is_empty() && states.iter().all(|state| *state == Occlusion::Fullscreen);
+    let all_fullscreen =
+        !states.is_empty() && states.iter().all(|state| *state == Occlusion::Fullscreen);
     let all_covered = !states.is_empty() && states.iter().all(|state| *state != Occlusion::None);
 
     if all_fullscreen && enabled.contains(&PauseTrigger::Fullscreen) {

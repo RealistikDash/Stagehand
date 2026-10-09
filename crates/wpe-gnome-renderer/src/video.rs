@@ -35,7 +35,10 @@ impl VideoContent {
 
         let rate_limit = gst::ElementFactory::make("videorate")
             .property("drop-only", true)
-            .property("max-rate", i32::try_from(arguments.fps.get()).unwrap_or(i32::MAX))
+            .property(
+                "max-rate",
+                i32::try_from(arguments.fps.get()).unwrap_or(i32::MAX),
+            )
             .build()?;
         let uri = gst::glib::filename_to_uri(file, None)
             .map_err(|_| ContentError::InvalidPath(file.display().to_string()))?;
@@ -46,7 +49,9 @@ impl VideoContent {
             .property("volume", arguments.volume.fraction())
             .property("mute", arguments.muted)
             .build()?;
-        let bus = pipeline.bus().ok_or_else(|| gst::glib::bool_error!("playbin has no bus"))?;
+        let bus = pipeline
+            .bus()
+            .ok_or_else(|| gst::glib::bool_error!("playbin has no bus"))?;
         let looped_once = Rc::new(Cell::new(false));
         let bus_watch = {
             let pipeline = pipeline.clone();
@@ -61,7 +66,11 @@ impl VideoContent {
         pipeline.set_state(gst::State::Playing)?;
         tracing::info!(path = %file.display(), "Started video pipeline.");
 
-        Ok(Self { pipeline, picture, _bus_watch: bus_watch })
+        Ok(Self {
+            pipeline,
+            picture,
+            _bus_watch: bus_watch,
+        })
     }
 }
 

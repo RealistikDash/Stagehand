@@ -5,6 +5,7 @@
     reason = "the service runs on one thread; no auto-trait bounds are needed"
 )]
 
+use std::path::Path;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -47,6 +48,8 @@ pub trait BackgroundPinner {
     async fn unpin(&mut self, pid: ProcessId) -> Result<(), PinError>;
     async fn set_visible(&mut self, pid: ProcessId, visible: bool) -> Result<(), PinError>;
     async fn set_dim(&mut self, pid: ProcessId, dim: DimLevel) -> Result<(), PinError>;
+    /// Writes the window's current frame as a PNG at `path`.
+    async fn capture_still(&mut self, pid: ProcessId, path: &Path) -> Result<(), PinError>;
 }
 
 #[derive(Clone, Debug, PartialEq)]

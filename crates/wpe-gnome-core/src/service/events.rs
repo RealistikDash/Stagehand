@@ -47,7 +47,10 @@ pub enum Occlusion {
 pub enum Event {
     MonitorsChanged,
     LibraryChanged,
-    OcclusionChanged { connector: ConnectorName, occlusion: Occlusion },
+    OcclusionChanged {
+        connector: ConnectorName,
+        occlusion: Occlusion,
+    },
     ScreenLocked(bool),
     SessionIdle(bool),
     OnBattery(bool),
@@ -55,7 +58,10 @@ pub enum Event {
     ShellReady(bool),
     WindowPinned(ProcessId),
     WindowLost(ProcessId),
-    RendererExited { pid: ProcessId, success: bool },
+    RendererExited {
+        pid: ProcessId,
+        success: bool,
+    },
     Tick,
     Request(Request),
     Shutdown,
@@ -68,11 +74,27 @@ pub enum Request {
     GetStatus(Reply<Status>),
     GetConfig(Reply<Config>),
     Rescan(Reply<()>),
-    SetSettings { settings: Settings, reply: Reply<Result<(), ServiceError>> },
-    Assign { key: MonitorKey, choice: WallpaperChoice, reply: Reply<Result<(), ServiceError>> },
-    AssignSpan { choice: WallpaperChoice, reply: Reply<Result<(), ServiceError>> },
-    SetLayout { layout: AssignmentLayout, reply: Reply<Result<(), ServiceError>> },
-    Unassign { key: MonitorKey, reply: Reply<Result<(), ServiceError>> },
+    SetSettings {
+        settings: Settings,
+        reply: Reply<Result<(), ServiceError>>,
+    },
+    Assign {
+        key: MonitorKey,
+        choice: WallpaperChoice,
+        reply: Reply<Result<(), ServiceError>>,
+    },
+    AssignSpan {
+        choice: WallpaperChoice,
+        reply: Reply<Result<(), ServiceError>>,
+    },
+    SetLayout {
+        layout: AssignmentLayout,
+        reply: Reply<Result<(), ServiceError>>,
+    },
+    Unassign {
+        key: MonitorKey,
+        reply: Reply<Result<(), ServiceError>>,
+    },
     SetPropertyValues {
         wallpaper: WallpaperId,
         values: PropertyValues,

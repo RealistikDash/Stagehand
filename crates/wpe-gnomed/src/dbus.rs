@@ -91,42 +91,55 @@ impl DaemonInterface {
     async fn set_settings(&self, settings_json: &str) -> fdo::Result<()> {
         let settings: Settings = decode(settings_json)?;
 
-        self.request_unit(|reply| Request::SetSettings { settings, reply }).await
+        self.request_unit(|reply| Request::SetSettings { settings, reply })
+            .await
     }
 
     async fn assign(&self, monitor_key: &str, choice_json: &str) -> fdo::Result<()> {
         let key = MonitorKey::new(monitor_key);
         let choice: WallpaperChoice = decode(choice_json)?;
 
-        self.request_unit(|reply| Request::Assign { key, choice, reply }).await
+        self.request_unit(|reply| Request::Assign { key, choice, reply })
+            .await
     }
 
     async fn assign_span(&self, choice_json: &str) -> fdo::Result<()> {
         let choice: WallpaperChoice = decode(choice_json)?;
 
-        self.request_unit(|reply| Request::AssignSpan { choice, reply }).await
+        self.request_unit(|reply| Request::AssignSpan { choice, reply })
+            .await
     }
 
     async fn set_layout(&self, layout: &str) -> fdo::Result<()> {
-        let layout: AssignmentLayout = decode(&serde_json::Value::String(layout.to_owned()).to_string())?;
+        let layout: AssignmentLayout =
+            decode(&serde_json::Value::String(layout.to_owned()).to_string())?;
 
-
-        self.request_unit(|reply| Request::SetLayout { layout, reply }).await
+        self.request_unit(|reply| Request::SetLayout { layout, reply })
+            .await
     }
 
     async fn unassign(&self, monitor_key: &str) -> fdo::Result<()> {
         let key = MonitorKey::new(monitor_key);
 
-        self.request_unit(|reply| Request::Unassign { key, reply }).await
+        self.request_unit(|reply| Request::Unassign { key, reply })
+            .await
     }
 
     async fn set_property_values(&self, wallpaper_id: &str, values_json: &str) -> fdo::Result<()> {
-        let wallpaper: WallpaperId = wallpaper_id
-            .parse()
-            .map_err(|error: wpe_gnome_core::model::WallpaperIdError| fdo::Error::InvalidArgs(error.to_string()))?;
+        let wallpaper: WallpaperId =
+            wallpaper_id
+                .parse()
+                .map_err(|error: wpe_gnome_core::model::WallpaperIdError| {
+                    fdo::Error::InvalidArgs(error.to_string())
+                })?;
         let values = decode(values_json)?;
 
-        self.request_unit(|reply| Request::SetPropertyValues { wallpaper, values, reply }).await
+        self.request_unit(|reply| Request::SetPropertyValues {
+            wallpaper,
+            values,
+            reply,
+        })
+        .await
     }
 
     async fn stop(&self) -> fdo::Result<()> {

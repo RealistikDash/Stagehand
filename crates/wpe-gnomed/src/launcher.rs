@@ -111,7 +111,12 @@ impl RendererLauncher for ProcessLauncher {
     async fn launch(&mut self, plan: &LaunchPlan) -> Result<ProcessHandle, RendererError> {
         let argv = self.argv(plan);
         let mut command = std::process::Command::new("/bin/sh");
-        command.arg("-c").arg(GATE_SCRIPT).arg("wpe-gate").args(&argv).process_group(0);
+        command
+            .arg("-c")
+            .arg(GATE_SCRIPT)
+            .arg("wpe-gate")
+            .args(&argv)
+            .process_group(0);
         // NOTE: The stdio configuration must be set on the async command; the conversion from
         // the std command keeps the process group but forgets the pipes.
         let mut child = Command::from(command)
@@ -147,7 +152,9 @@ pub struct ProcessHandle {
 
 impl std::fmt::Debug for ProcessHandle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ProcessHandle").field("pid", &self.pid).finish_non_exhaustive()
+        f.debug_struct("ProcessHandle")
+            .field("pid", &self.pid)
+            .finish_non_exhaustive()
     }
 }
 
@@ -183,9 +190,8 @@ impl RendererHandle for ProcessHandle {
     }
 
     async fn send(&mut self, command: &RendererCommand) -> Result<(), RendererError> {
-        let line = serde_json::to_string(command).map_err(|error| {
-            RendererError::Pipe(std::io::Error::other(error))
-        })?;
+        let line = serde_json::to_string(command)
+            .map_err(|error| RendererError::Pipe(std::io::Error::other(error)))?;
 
         self.write_line(&line).await
     }

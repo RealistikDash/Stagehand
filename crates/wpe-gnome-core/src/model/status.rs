@@ -12,8 +12,13 @@ pub enum SlotState {
     Idle,
     Starting,
     Running,
-    Paused { reasons: Vec<PauseTrigger>, hidden: bool },
-    Failed { message: String },
+    Paused {
+        reasons: Vec<PauseTrigger>,
+        hidden: bool,
+    },
+    Failed {
+        message: String,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

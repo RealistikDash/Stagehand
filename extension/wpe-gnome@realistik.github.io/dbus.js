@@ -25,6 +25,10 @@ const INTERFACE_XML = `
       <arg type="u" name="pid" direction="in"/>
       <arg type="d" name="level" direction="in"/>
     </method>
+    <method name="CaptureStill">
+      <arg type="u" name="pid" direction="in"/>
+      <arg type="s" name="filename" direction="in"/>
+    </method>
     <property name="Version" type="u" access="read"/>
     <property name="OcclusionStates" type="a{ss}" access="read"/>
     <signal name="WindowPinned">
@@ -145,6 +149,13 @@ export class ShellService {
         });
 
         return JSON.stringify(windows);
+    }
+
+    // Writes the renderer's current frame as PNG; the daemon publishes it for static consumers
+    // (lock screen, static blur) instead of the square Workshop preview.
+    CaptureStill(pid, filename) {
+        if (!this._registry.captureStill(pid, filename))
+            throw new Gio.DBusError({code: Gio.DBusError.FAILED, message: 'No image for that window'});
     }
 
     _emit(name, variant) {

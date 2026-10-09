@@ -41,6 +41,8 @@ use crate::still;
 
 const MAX_START_ATTEMPTS: u32 = 3;
 const RETRY_BASE_DELAY: Duration = Duration::from_secs(3);
+// Long enough for scenes to finish loading before a frame is captured for the still image.
+const STILL_CAPTURE_DELAY: Duration = Duration::from_secs(6);
 const PICTURE_OPTIONS_FOR_STILL: &str = "zoom";
 
 struct Process<H> {
@@ -50,6 +52,7 @@ struct Process<H> {
     paused: Option<Paused>,
     hidden: bool,
     terminating: bool,
+    still_due: Option<Instant>,
 }
 
 struct Paused {
@@ -159,7 +162,10 @@ where
                 self.notify(Notification::LibraryChanged);
                 self.reconcile().await;
             }
-            Event::OcclusionChanged { connector, occlusion } => {
+            Event::OcclusionChanged {
+                connector,
+                occlusion,
+            } => {
                 self.occlusion.insert(connector, occlusion);
                 self.apply_pause_state().await;
             }
@@ -247,7 +253,11 @@ where
                 reply.send(self.save_config());
                 self.reconcile().await;
             }
-            Request::SetPropertyValues { wallpaper, values, reply } => {
+            Request::SetPropertyValues {
+                wallpaper,
+                values,
+                reply,
+            } => {
                 if values.is_empty() {
                     self.config.property_values.remove(&wallpaper);
                 } else {
@@ -291,7 +301,10 @@ where
 
     fn rescan_library(&mut self) {
         self.library = self.ctx.workshop.scan();
-        tracing::info!(items = self.library.items.len(), "Scanned wallpaper library.");
+        tracing::info!(
+            items = self.library.items.len(),
+            "Scanned wallpaper library."
+        );
     }
 
     async fn refresh_monitors(&mut self) {
@@ -315,7 +328,10 @@ where
         let mut retained = Vec::new();
 
         for mut slot in std::mem::take(&mut self.slots) {
-            if desired.iter().any(|wanted| wanted.connectors == slot.desired.connectors) {
+            if desired
+                .iter()
+                .any(|wanted| wanted.connectors == slot.desired.connectors)
+            {
                 retained.push(slot);
             } else {
                 tracing::info!(connectors = ?slot.connectors(), "Stopping renderer for removed slot.");
@@ -326,7 +342,10 @@ where
         self.slots = retained;
 
         for wanted in desired {
-            let existing = self.slots.iter().position(|slot| slot.connectors() == wanted.connectors);
+            let existing = self
+                .slots
+                .iter()
+                .position(|slot| slot.connectors() == wanted.connectors);
             let index = if let Some(index) = existing {
                 index
             } else {
@@ -400,7 +419,9 @@ where
             return;
         }
 
-        if slot.retry_at.is_some_and(|retry_at| now < retry_at) || slot.attempts >= MAX_START_ATTEMPTS {
+        if slot.retry_at.is_some_and(|retry_at| now < retry_at)
+            || slot.attempts >= MAX_START_ATTEMPTS
+        {
             return;
         }
 
@@ -481,6 +502,7 @@ where
             paused: None,
             hidden: false,
             terminating: false,
+            still_due: None,
         });
     }
 
@@ -494,11 +516,16 @@ where
             return;
         };
 
-        if slot.pending.as_ref().is_some_and(|process| process.handle.pid() == pid) {
+        if slot
+            .pending
+            .as_ref()
+            .is_some_and(|process| process.handle.pid() == pid)
+        {
             let Some(mut promoted) = slot.pending.take() else {
                 return;
             };
             promoted.pinned = true;
+            promoted.still_due = Some(self.ctx.clock.now() + STILL_CAPTURE_DELAY);
 
             if let Some(mut previous) = slot.current.replace(promoted) {
                 terminate(&mut self.ctx.pinner, &mut previous).await;
@@ -562,14 +589,15 @@ where
 
     async fn on_tick(&mut self) {
         let now = self.ctx.clock.now();
-        let due = self
-            .slots
-            .iter()
-            .any(|slot| slot.retry_at.is_some_and(|at| now >= at) && slot.attempts < MAX_START_ATTEMPTS);
+        let due = self.slots.iter().any(|slot| {
+            slot.retry_at.is_some_and(|at| now >= at) && slot.attempts < MAX_START_ATTEMPTS
+        });
 
         if due {
             self.reconcile().await;
         }
+
+        self.capture_due_stills(now).await;
 
         let Some(timeout) = self.config.settings.oled.paused_still_timeout_seconds else {
             return;
@@ -590,7 +618,12 @@ where
 
             tracing::info!(pid = %current.handle.pid(), "Hiding paused renderer after timeout.");
 
-            if let Err(error) = self.ctx.pinner.set_visible(current.handle.pid(), false).await {
+            if let Err(error) = self
+                .ctx
+                .pinner
+                .set_visible(current.handle.pid(), false)
+                .await
+            {
                 tracing::warn!(error = %error, "Could not hide paused renderer.");
 
                 continue;
@@ -614,9 +647,17 @@ where
         let Some(slot) = self.slots.get_mut(index) else {
             return;
         };
-        let taken = if slot.current.as_ref().is_some_and(|process| process.handle.pid() == pid) {
+        let taken = if slot
+            .current
+            .as_ref()
+            .is_some_and(|process| process.handle.pid() == pid)
+        {
             slot.current.take()
-        } else if slot.pending.as_ref().is_some_and(|process| process.handle.pid() == pid) {
+        } else if slot
+            .pending
+            .as_ref()
+            .is_some_and(|process| process.handle.pid() == pid)
+        {
             slot.pending.take()
         } else {
             None
@@ -661,7 +702,12 @@ where
         let mut changed = false;
 
         for slot in &mut self.slots {
-            let reasons = plan::pause_reasons(&settings, self.conditions, &self.occlusion, &slot.desired.connectors);
+            let reasons = plan::pause_reasons(
+                &settings,
+                self.conditions,
+                &self.occlusion,
+                &slot.desired.connectors,
+            );
             let Some(current) = slot.current.as_mut() else {
                 continue;
             };
@@ -685,7 +731,12 @@ where
                     }
 
                     if current.hidden {
-                        if let Err(error) = self.ctx.pinner.set_visible(current.handle.pid(), true).await {
+                        if let Err(error) = self
+                            .ctx
+                            .pinner
+                            .set_visible(current.handle.pid(), true)
+                            .await
+                        {
                             tracing::warn!(error = %error, "Could not show renderer.");
                         }
 
@@ -708,7 +759,10 @@ where
                         continue;
                     }
 
-                    current.paused = Some(Paused { since: now, reasons });
+                    current.paused = Some(Paused {
+                        since: now,
+                        reasons,
+                    });
                     changed = true;
                 }
                 (Some(paused), false) => {
@@ -729,7 +783,10 @@ where
     async fn apply_audio(&mut self) {
         let audio = &self.config.settings.audio;
         let muted = audio.muted || (audio.mute_when_other_app_plays && self.other_audio_playing);
-        let command = RendererCommand::SetAudio { muted, volume: audio.volume };
+        let command = RendererCommand::SetAudio {
+            muted,
+            volume: audio.volume,
+        };
 
         for slot in &mut self.slots {
             for process in slot.current.iter_mut().chain(slot.pending.iter_mut()) {
@@ -758,14 +815,61 @@ where
     // Still image for static consumers.
     // ------------------------------------------------------------------------------------------
 
-    async fn publish_still(&mut self) {
-        let primary = self
-            .monitors
+    /// A frame of the running renderer replaces the preview-based still once it has settled.
+    async fn capture_due_stills(&mut self, now: Instant) {
+        let primary = self.primary_connector();
+
+        for index in 0..self.slots.len() {
+            let Some(slot) = self.slots.get_mut(index) else {
+                continue;
+            };
+            let Some(current) = slot.current.as_mut() else {
+                continue;
+            };
+
+            if current.still_due.is_none_or(|due| now < due) || current.paused.is_some() {
+                continue;
+            }
+
+            current.still_due = None;
+            let pid = current.handle.pid();
+            let wallpaper = slot.desired.choice.wallpaper.clone();
+            let is_primary = primary
+                .as_ref()
+                .is_some_and(|primary| slot.desired.connectors.contains(primary));
+            let output = self.still_path(&wallpaper, "frame");
+
+            if let Err(error) = self.ctx.pinner.capture_still(pid, &output).await {
+                tracing::warn!(error = %error, pid = %pid, "Could not capture a frame for the still image.");
+
+                continue;
+            }
+
+            tracing::info!(path = %output.display(), "Captured frame for still image.");
+
+            if is_primary {
+                self.publish_keys(output).await;
+            }
+        }
+    }
+
+    fn primary_connector(&self) -> Option<ConnectorName> {
+        self.monitors
             .iter()
             .find(|monitor| monitor.is_primary)
             .or_else(|| self.monitors.first())
-            .map(|monitor| monitor.identity.connector.clone());
-        let Some(primary) = primary else {
+            .map(|monitor| monitor.identity.connector.clone())
+    }
+
+    fn still_path(&self, wallpaper: &WallpaperId, suffix: &str) -> PathBuf {
+        self.ctx.cache_dir.join(format!(
+            "still-{}-{suffix}.png",
+            sanitise(&wallpaper.to_string())
+        ))
+    }
+
+    async fn publish_still(&mut self) {
+        let Some(primary) = self.primary_connector() else {
             return;
         };
         let wallpaper = self
@@ -781,9 +885,14 @@ where
 
             return;
         };
-        let output = self.ctx.cache_dir.join(format!("still-{}.png", sanitise(&wallpaper.id.to_string())));
+        let frame = self.still_path(&wallpaper.id, "frame");
+        let output = self.still_path(&wallpaper.id, "preview");
 
-        if self.published_still.as_ref() == Some(&output) {
+        if self
+            .published_still
+            .as_ref()
+            .is_some_and(|published| *published == output || *published == frame)
+        {
             return;
         }
 
@@ -793,6 +902,10 @@ where
             return;
         }
 
+        self.publish_keys(output).await;
+    }
+
+    async fn publish_keys(&mut self, output: PathBuf) {
         if self.config.original_background.is_none() {
             match self.ctx.still.read_keys().await {
                 Ok(keys) => {
@@ -850,24 +963,34 @@ where
                         None => SlotState::Running,
                     },
                     (None, Some(_), _) => SlotState::Starting,
-                    (None, None, Some(message)) => SlotState::Failed { message: message.clone() },
+                    (None, None, Some(message)) => SlotState::Failed {
+                        message: message.clone(),
+                    },
                     (None, None, None) => SlotState::Idle,
                 };
 
                 SlotStatus {
                     connectors: slot.desired.connectors.clone(),
                     wallpaper: Some(slot.desired.choice.wallpaper.clone()),
-                    pid: process.or(slot.pending.as_ref()).map(|process| process.handle.pid()),
+                    pid: process
+                        .or(slot.pending.as_ref())
+                        .map(|process| process.handle.pid()),
                     state,
                 }
             })
             .collect();
 
-        Status { shell_ready: self.shell_ready, slots }
+        Status {
+            shell_ready: self.shell_ready,
+            slots,
+        }
     }
 }
 
-async fn terminate<P: BackgroundPinner, H: RendererHandle>(pinner: &mut P, process: &mut Process<H>) {
+async fn terminate<P: BackgroundPinner, H: RendererHandle>(
+    pinner: &mut P,
+    process: &mut Process<H>,
+) {
     let pid = process.handle.pid();
     process.terminating = true;
 
@@ -896,6 +1019,12 @@ fn is_gtk(plan: &LaunchPlan) -> bool {
 
 fn sanitise(text: &str) -> String {
     text.chars()
-        .map(|character| if character.is_ascii_alphanumeric() { character } else { '_' })
+        .map(|character| {
+            if character.is_ascii_alphanumeric() {
+                character
+            } else {
+                '_'
+            }
+        })
         .collect()
 }

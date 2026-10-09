@@ -17,7 +17,10 @@ const SETTLE: Duration = Duration::from_secs(2);
 #[derive(Debug, Error)]
 pub enum WatchError {
     #[error("could not watch {path}: {source}")]
-    Watch { path: PathBuf, source: notify::Error },
+    Watch {
+        path: PathBuf,
+        source: notify::Error,
+    },
     #[error("could not create watcher: {0}")]
     Create(notify::Error),
 }
@@ -36,23 +39,27 @@ impl std::fmt::Debug for LibraryWatcher {
 impl LibraryWatcher {
     pub fn new(directories: &[PathBuf], events: Sender<Event>) -> Result<Self, WatchError> {
         let (raw_sender, raw_receiver) = async_channel::unbounded::<()>();
-        let mut watcher = notify::recommended_watcher(move |result: notify::Result<notify::Event>| {
-            match result {
-                // Renderers read the media files constantly; only structural changes matter.
-                Ok(event) if is_structural(&event.kind) => {
-                    // NOTE: A full or closed channel only means the debounce task already knows.
-                    let _ = raw_sender.try_send(());
+        let mut watcher =
+            notify::recommended_watcher(move |result: notify::Result<notify::Event>| {
+                match result {
+                    // Renderers read the media files constantly; only structural changes matter.
+                    Ok(event) if is_structural(&event.kind) => {
+                        // NOTE: A full or closed channel only means the debounce task already knows.
+                        let _ = raw_sender.try_send(());
+                    }
+                    Ok(_) => {}
+                    Err(error) => tracing::warn!(error = %error, "File watcher reported an error."),
                 }
-                Ok(_) => {}
-                Err(error) => tracing::warn!(error = %error, "File watcher reported an error."),
-            }
-        })
-        .map_err(WatchError::Create)?;
+            })
+            .map_err(WatchError::Create)?;
 
         for directory in directories {
             watcher
                 .watch(directory, RecursiveMode::Recursive)
-                .map_err(|source| WatchError::Watch { path: directory.clone(), source })?;
+                .map_err(|source| WatchError::Watch {
+                    path: directory.clone(),
+                    source,
+                })?;
             tracing::debug!(path = %directory.display(), "Watching wallpaper directory.");
         }
 

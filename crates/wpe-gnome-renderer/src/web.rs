@@ -90,7 +90,11 @@ impl WebContent {
         view.load_uri(&uri);
         tracing::info!(path = %index.display(), "Loading web wallpaper.");
 
-        Ok(Self { view, properties, fps })
+        Ok(Self {
+            view,
+            properties,
+            fps,
+        })
     }
 }
 
@@ -147,9 +151,11 @@ impl Content for WebContent {
     }
 
     fn set_properties(&self, values: &PropertyValues) {
-        self.properties
-            .borrow_mut()
-            .extend(values.iter().map(|(key, value)| (key.clone(), value.clone())));
+        self.properties.borrow_mut().extend(
+            values
+                .iter()
+                .map(|(key, value)| (key.clone(), value.clone())),
+        );
         push_properties(&self.view, &self.properties.borrow(), self.fps);
     }
 }

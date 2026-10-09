@@ -20,19 +20,49 @@ use zbus::zvariant::Type;
 #[derive(Clone, Debug, Deserialize, Type)]
 struct MonitorSpec(String, String, String, String);
 
-#[expect(dead_code, reason = "positional D-Bus fields must be decoded even when unused")]
+#[expect(
+    dead_code,
+    reason = "positional D-Bus fields must be decoded even when unused"
+)]
 #[derive(Clone, Debug, Deserialize, Type)]
-struct Mode(String, i32, i32, f64, f64, Vec<f64>, HashMap<String, OwnedValue>);
+struct Mode(
+    String,
+    i32,
+    i32,
+    f64,
+    f64,
+    Vec<f64>,
+    HashMap<String, OwnedValue>,
+);
 
-#[expect(dead_code, reason = "positional D-Bus fields must be decoded even when unused")]
+#[expect(
+    dead_code,
+    reason = "positional D-Bus fields must be decoded even when unused"
+)]
 #[derive(Clone, Debug, Deserialize, Type)]
 struct PhysicalMonitor(MonitorSpec, Vec<Mode>, HashMap<String, OwnedValue>);
 
-#[expect(dead_code, reason = "positional D-Bus fields must be decoded even when unused")]
+#[expect(
+    dead_code,
+    reason = "positional D-Bus fields must be decoded even when unused"
+)]
 #[derive(Clone, Debug, Deserialize, Type)]
-struct LogicalMonitor(i32, i32, f64, u32, bool, Vec<MonitorSpec>, HashMap<String, OwnedValue>);
+struct LogicalMonitor(
+    i32,
+    i32,
+    f64,
+    u32,
+    bool,
+    Vec<MonitorSpec>,
+    HashMap<String, OwnedValue>,
+);
 
-type CurrentState = (u32, Vec<PhysicalMonitor>, Vec<LogicalMonitor>, HashMap<String, OwnedValue>);
+type CurrentState = (
+    u32,
+    Vec<PhysicalMonitor>,
+    Vec<LogicalMonitor>,
+    HashMap<String, OwnedValue>,
+);
 
 #[zbus::proxy(
     interface = "org.gnome.Mutter.DisplayConfig",
@@ -97,9 +127,16 @@ fn monitors_of(logical: &LogicalMonitor, physical: &[PhysicalMonitor]) -> Vec<Mo
             let mode = monitor
                 .1
                 .iter()
-                .find(|mode| mode.6.get("is-current").is_some_and(|flag| bool::try_from(flag.clone()).unwrap_or(false)))
+                .find(|mode| {
+                    mode.6
+                        .get("is-current")
+                        .is_some_and(|flag| bool::try_from(flag.clone()).unwrap_or(false))
+                })
                 .or_else(|| monitor.1.first())?;
-            let (mut width, mut height) = (logical_pixels(mode.1, *scale), logical_pixels(mode.2, *scale));
+            let (mut width, mut height) = (
+                logical_pixels(mode.1, *scale),
+                logical_pixels(mode.2, *scale),
+            );
 
             // Transforms 1, 3, 5 and 7 rotate by 90 or 270 degrees.
             if transform % 2 == 1 {
@@ -113,7 +150,12 @@ fn monitors_of(logical: &LogicalMonitor, physical: &[PhysicalMonitor]) -> Vec<Mo
                     product: spec.2.clone(),
                     serial: spec.3.clone(),
                 },
-                logical: Rectangle { x: *x, y: *y, width, height },
+                logical: Rectangle {
+                    x: *x,
+                    y: *y,
+                    width,
+                    height,
+                },
                 scale: *scale,
                 is_primary: *primary,
             })

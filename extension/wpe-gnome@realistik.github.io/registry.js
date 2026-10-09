@@ -173,6 +173,18 @@ export class Registry extends Signals.EventEmitter {
         return true;
     }
 
+    captureStill(pid, filename) {
+        const pinned = this._windows.get(pid);
+        const image = pinned?.actor.get_image(null);
+
+        if (!image)
+            return false;
+
+        image.writeToPNG(filename);
+
+        return true;
+    }
+
     isPinned(metaWindow) {
         return this._byWindow.has(metaWindow);
     }

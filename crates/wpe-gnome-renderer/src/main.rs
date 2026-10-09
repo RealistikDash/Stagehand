@@ -17,7 +17,10 @@ use wpe_gnome_core::protocol::RendererArguments;
 const APP_ID: &str = "io.github.realistik.WpeGnome.Renderer";
 
 #[derive(Debug, Parser)]
-#[command(name = "wpe-gnome-renderer", about = "Renders one wpe-gnome wallpaper window")]
+#[command(
+    name = "wpe-gnome-renderer",
+    about = "Renders one wpe-gnome wallpaper window"
+)]
 struct Cli {
     /// The `RendererArguments` JSON produced by the daemon.
     #[arg(long)]
@@ -26,7 +29,9 @@ struct Cli {
 
 fn main() -> ExitCode {
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+        )
         .with_writer(std::io::stderr)
         .init();
     let cli = Cli::parse();
