@@ -1,10 +1,10 @@
-# wpe-gnome task runner. `just --list` shows everything.
+# stagehand task runner. `just --list` shows everything.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-uuid := "wpe-gnome@realistik.github.io"
+uuid := "stagehand@realistikdash.github.io"
 bindir := env("HOME") / ".local/bin"
-libexecdir := env("HOME") / ".local/libexec/wpe-gnome"
+libexecdir := env("HOME") / ".local/libexec/stagehand"
 datadir := env("XDG_DATA_HOME", env("HOME") / ".local/share")
 configdir := env("XDG_CONFIG_HOME", env("HOME") / ".config")
 lwe_commit := "b016d7d1fdcf4e5fd2f9c9fa420a8aaa07fee02d"
@@ -42,6 +42,6 @@ nested *ARGS:
     cargo build
     tools/nested.sh {{ARGS}}
 
-# Build the RPMs into target/rpm (wpe-gnome and wpe-gnome-scene-renderer).
+# Build the RPMs into target/rpm (stagehand and stagehand-scene-renderer).
 rpm:
     tools/build-rpm.sh "{{lwe_repo}}" "{{lwe_commit}}"

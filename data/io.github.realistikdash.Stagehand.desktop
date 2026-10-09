@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Stagehand
+Comment=Steam Wallpaper Engine wallpapers as live GNOME backgrounds
+Exec=stagehand
+Icon=io.github.realistikdash.Stagehand
+Terminal=false
+Type=Application
+Categories=GNOME;GTK;Settings;DesktopSettings;
+Keywords=wallpaper;background;live;steam;wallpaper engine;
+StartupNotify=true
+DBusActivatable=false
+X-GNOME-UsesNotifications=false

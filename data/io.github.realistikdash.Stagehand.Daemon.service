@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=io.github.realistikdash.Stagehand.Daemon
+Exec=@BINDIR@/stagehandd
+SystemdService=stagehandd.service

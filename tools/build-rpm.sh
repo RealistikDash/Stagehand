@@ -10,12 +10,12 @@ TOP="$ROOT/target/rpm"
 SHORT="${COMMIT:0:7}"
 mkdir -p "$TOP"/{SOURCES,SPECS,BUILD,RPMS,SRPMS}
 
-echo "== source tarball wpe-gnome-$VERSION"
-git -C "$ROOT" archive --format=tar.gz --prefix="wpe-gnome-$VERSION/" -o "$TOP/SOURCES/wpe-gnome-$VERSION.tar.gz" HEAD
+echo "== source tarball stagehand-$VERSION"
+git -C "$ROOT" archive --format=tar.gz --prefix="stagehand-$VERSION/" -o "$TOP/SOURCES/stagehand-$VERSION.tar.gz" HEAD
 
 echo "== vendor tarball"
 (cd "$ROOT" && cargo vendor --versioned-dirs "$TOP/BUILD/vendor-tmp/vendor" >/dev/null)
-tar -C "$TOP/BUILD/vendor-tmp" -czf "$TOP/SOURCES/wpe-gnome-$VERSION-vendor.tar.gz" vendor
+tar -C "$TOP/BUILD/vendor-tmp" -czf "$TOP/SOURCES/stagehand-$VERSION-vendor.tar.gz" vendor
 rm -rf "$TOP/BUILD/vendor-tmp"
 
 echo "== linux-wallpaperengine source tarball ($SHORT)"
@@ -31,7 +31,7 @@ tar -C "$(dirname "$SRC")" --exclude=.git --exclude=build --transform "s|^src|li
     -czf "$TOP/SOURCES/linux-wallpaperengine-$SHORT.tar.gz" src
 
 cp "$ROOT/packaging/"*.spec "$TOP/SPECS/"
-for spec in ${WPE_RPM_SPECS:-wpe-gnome wpe-gnome-scene-renderer}; do
+for spec in ${STAGEHAND_RPM_SPECS:-stagehand stagehand-scene-renderer}; do
     echo "== rpmbuild $spec"
     rpmbuild --define "_topdir $TOP" -ba "$TOP/SPECS/$spec.spec"
 done

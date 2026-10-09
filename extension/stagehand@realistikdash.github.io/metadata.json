@@ -1,0 +1,9 @@
+{
+  "uuid": "stagehand@realistikdash.github.io",
+  "name": "stagehand",
+  "description": "Pins stagehand renderer windows into the desktop background so Wallpaper Engine wallpapers become the real background.",
+  "shell-version": ["50"],
+  "session-modes": ["user"],
+  "url": "https://github.com/RealistikDash/Stagehand",
+  "version-name": "0.1.0"
+}

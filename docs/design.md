@@ -1,4 +1,4 @@
-# wpe-gnome design note
+# Stagehand design note
 
 Live Wallpaper Engine wallpapers as the real GNOME desktop background, on Wayland.
 
@@ -40,7 +40,7 @@ Results on this machine:
 - `--list-properties` prints every `general.properties` entry with type, text and current value; `--set-property name=value` is accepted repeatedly. Properties cannot be changed while the process runs, so a scene property change is a renderer restart (crossfaded by the extension).
 - Useful flags: `--fps`, `--silent`, `--volume`, `--noautomute`, `--no-fullscreen-pause` (we do our own pausing), `--scaling fill|fit|stretch|default`, `--assets-dir`, `--disable-mouse`.
 - It does not set a Wayland `app_id` (GLFW only sets the X11 class), so the window cannot be recognised by `wm_class`. The extension therefore recognises renderer windows by **client PID**, which `Meta.Window.get_pid()` provides for Wayland clients.
-- Licence: GPL-3.0. It is executed as a separate process with its own command line; nothing links against it, so this project keeps its own licence (MIT). The build is not vendored; `just lwe` builds it from a pinned commit into `~/.local/libexec/wpe-gnome/`.
+- Licence: GPL-3.0. It is executed as a separate process with its own command line; nothing links against it, so this project keeps its own licence (MIT). The build is not vendored; `just lwe` builds it from a pinned commit into `~/.local/libexec/stagehand/`.
 
 No better maintained fork was found; master is active (last commit September 2026 on the Hanabi side, June 2026 here) and already has the Wayland and property features the brief asked for.
 
@@ -49,7 +49,7 @@ No better maintained fork was found; master is active (last commit September 202
 - Video: GStreamer 1.28.7 with the `gtk4paintablesink` from `gst-plugins-rs` (`gstreamer1-plugin-gtk4` 0.15.2 is a Fedora package). `playbin3` picks `vah264dec`/`vah265dec` after the RPM Fusion driver install. Seamless looping uses segment seeks, not EOS.
 - Web: WebKitGTK 6.0 (2.54.1) in the same GTK renderer binary. The property and audio listener shims are injected as a user script at document start.
 
-Both live in one Rust binary, `wpe-gnome-renderer`, with a plug-in per kind. This is the "single renderer" variant the brief allowed, with scenes still delegated to linux-wallpaperengine. The one-binary design keeps the window handshake, pause protocol and sizing identical for video and web.
+Both live in one Rust binary, `stagehand-renderer`, with a plug-in per kind. This is the "single renderer" variant the brief allowed, with scenes still delegated to linux-wallpaperengine. The one-binary design keeps the window handshake, pause protocol and sizing identical for video and web.
 
 ### Prior art: Hanabi
 
@@ -64,8 +64,8 @@ Hanabi identifies its windows by a JSON blob in the title and spawns the rendere
 ## 3. Architecture
 
 ```
-wpe-gnome (GTK4/libadwaita UI) ──D-Bus──▶ wpe-gnomed (daemon) ──spawn──▶ linux-wallpaperengine (scene)
-wpe-gnomectl (CLI)             ──D-Bus──▶     │                 ──spawn──▶ wpe-gnome-renderer (video | web)
+stagehand (GTK4/libadwaita UI) ──D-Bus──▶ stagehandd (daemon) ──spawn──▶ linux-wallpaperengine (scene)
+stagehandctl (CLI)             ──D-Bus──▶     │                 ──spawn──▶ stagehand-renderer (video | web)
                                               │
                                               └──D-Bus──▶ GNOME Shell extension (GJS)
                                                           pins renderer windows into every background
@@ -74,19 +74,19 @@ wpe-gnomectl (CLI)             ──D-Bus──▶     │                 ─�
 ### 3.1 Crate graph (one-way)
 
 ```
-wpe-gnome-core        pure domain: models, project.json parsing, Steam layout, config, traits
+stagehand-core        pure domain: models, project.json parsing, Steam layout, config, traits
       ▲
-wpe-gnome-ipc         D-Bus wire types and the two interface definitions (zbus)
+stagehand-ipc         D-Bus wire types and the two interface definitions (zbus)
       ▲          ▲
-wpe-gnomed       wpe-gnome (UI), wpe-gnomectl (CLI)
-wpe-gnome-renderer  depends on core only (protocol types)
+stagehandd       stagehand (UI), stagehandctl (CLI)
+stagehand-renderer  depends on core only (protocol types)
 ```
 
-- `wpe-gnome-core` has no GTK, no D-Bus, no GStreamer. It defines the boundary traits (`MonitorSource`, `RendererLauncher`, `BackgroundPinner`, `StillImageSink`, `SessionSignals`, `PowerSource`) and the repositories (`WorkshopRepository`, `ConfigRepository`). Tests and the CLI use it without a session.
-- `wpe-gnome-ipc` is the only crate that both sides of the bus depend on. It owns the zbus proxies and the `zvariant` wire structs and converts them to core models.
-- `wpe-gnomed` implements the traits with real systems (Mutter `DisplayConfig`, child processes, the extension proxy, GSettings through `gio`, `org.gnome.ScreenSaver`, UPower) and owns the orchestration.
-- `wpe-gnome-renderer` is a GTK program; it only shares the stdin protocol types with core.
-- `wpe-gnome` is a client of the daemon's D-Bus API. Closing it changes nothing.
+- `stagehand-core` has no GTK, no D-Bus, no GStreamer. It defines the boundary traits (`MonitorSource`, `RendererLauncher`, `BackgroundPinner`, `StillImageSink`, `SessionSignals`, `PowerSource`) and the repositories (`WorkshopRepository`, `ConfigRepository`). Tests and the CLI use it without a session.
+- `stagehand-ipc` is the only crate that both sides of the bus depend on. It owns the zbus proxies and the `zvariant` wire structs and converts them to core models.
+- `stagehandd` implements the traits with real systems (Mutter `DisplayConfig`, child processes, the extension proxy, GSettings through `gio`, `org.gnome.ScreenSaver`, UPower) and owns the orchestration.
+- `stagehand-renderer` is a GTK program; it only shares the stdin protocol types with core.
+- `stagehand` is a client of the daemon's D-Bus API. Closing it changes nothing.
 
 ### 3.2 Runtime choice
 
@@ -110,7 +110,7 @@ Empty ──apply──▶ Starting(child, gate held) ──Pin acked──▶ R
 The daemon must tell the extension about a renderer PID before its window maps, otherwise the window would be visible and focused for a frame. Spawning gives us the PID only after exec, so every renderer is started as
 
 ```
-/bin/sh -c 'read _ && exec "$@"' wpe-gate <renderer argv...>
+/bin/sh -c 'read _ && exec "$@"' stagehand-gate <renderer argv...>
 ```
 
 with stdin piped. The shell's PID is the renderer's PID after `exec`. The daemon calls `Pin(pid, connectors)` on the extension, waits for the reply, then writes the "go" line. If the extension is not running the gate is never opened and nothing is spawned at all, so a missing extension never results in stray windows.
@@ -138,11 +138,11 @@ Inputs: extension occlusion signals (fullscreen / maximised), `org.gnome.ScreenS
 
 ### 3.7 Still image for static consumers
 
-On every apply the daemon writes `$XDG_CACHE_HOME/wpe-gnome/still-<connector>.png` from the wallpaper's preview (GIF previews use their first frame) and sets `picture-uri` and `picture-uri-dark` to the primary monitor's still. The original values are saved into the config on the first apply and restored by `wpe-gnomectl restore-background`, which `just uninstall` runs.
+On every apply the daemon writes `$XDG_CACHE_HOME/stagehand/still-<connector>.png` from the wallpaper's preview (GIF previews use their first frame) and sets `picture-uri` and `picture-uri-dark` to the primary monitor's still. The original values are saved into the config on the first apply and restored by `stagehandctl restore-background`, which `just uninstall` runs.
 
 ## 4. Milestones
 
-1. Discovery and CLI listing (`wpe-gnomectl list`).
+1. Discovery and CLI listing (`stagehandctl list`).
 2. Daemon, renderer (video) and extension pinning in the nested devkit Shell.
 3. Scenes through linux-wallpaperengine.
 4. Web through WebKitGTK with the property listener.
@@ -174,9 +174,39 @@ and CLI driving it. Screenshots were taken with the extension's devkit-only `Scr
 
 - **Minimising before the first show freezes the surface.** The first version minimised the renderer window in `window-created`, before mutter had shown it once. The window then kept its first buffer forever (a 640x480 GLFW frame for scenes, which the clone stretched), and never received another frame callback. Minimising in `shown`, as Hanabi does, fixes it. The daemon still pins the PID before the window exists, so the window never appears as a window.
 - **`Meta.Window.get_pid()`** works for Wayland clients and identifies the gated process.
-- **dconf profiles need D-Bus-safe names.** `user-db:wpe-gnome-nested` produced a GDBus assertion and a hang inside `g_settings_sync()`; the profile is now `wpe_gnome_nested`. That hang also led to the rule that GSettings is only ever touched on a blocking thread with a timeout.
+- **dconf profiles need D-Bus-safe names.** `user-db:stagehand-nested` produced a GDBus assertion and a hang inside `g_settings_sync()`; the profile is now `stagehand_nested`. That hang also led to the rule that GSettings is only ever touched on a blocking thread with a timeout.
 - **`async-process` drops stdio flags on conversion** from a `std::process::Command`; the pipes must be configured on the async command.
-- **A GApplication id must differ from the daemon's bus name**, otherwise GTK tries to activate the daemon as an application (`org.gtk.Actions` error). The daemon is `io.github.realistik.WpeGnome.Daemon`.
+- **A GApplication id must differ from the daemon's bus name**, otherwise GTK tries to activate the daemon as an application (`org.gtk.Actions` error). The daemon is `io.github.realistikdash.Stagehand.Daemon`.
 - **`inotify` sees every read of the media file.** The watcher only reacts to create, remove, rename and data changes.
 
 ## 6. Measurements
+
+Release builds, nested devkit Shell with one 1280x800 virtual monitor, on the RX 7900 XTX. CPU is
+the whole renderer process group in percent of one core, averaged over 10 s; GPU busy is the
+amdgpu `gpu_busy_percent` average over the same window and includes the live session and the
+nested Shell (idle baseline 0-1 %). "Paused" is the state after a fullscreen window covered the
+monitor (`SIGSTOP` to the process group).
+
+| Wallpaper | Renderer | Running CPU | Running GPU | RSS | Paused CPU | Paused GPU |
+|---|---|---|---|---|---|---|
+| `889405383` Abstract Fox, 1080p30 H.264 | stagehand-renderer (VA-API) | 1.7 % | 2 % | 154 MB | 0.0 % | 0 % |
+| `3226861207` Arlecchino, 3840x1600 60 fps H.264 | stagehand-renderer (VA-API) | 3.1 % | 2 % | 164 MB | 0.0 % | 2 % (baseline) |
+| `2954387038` Hu Tao, 4K scene | linux-wallpaperengine, 30 fps cap | 2.3 % | 7 % | 292 MB | 0.0 % | 1 % |
+| `793602574` Solar System, web | stagehand-renderer (WebKitGTK) | 15.0 % | 10 % | 412 MB | 0.0 % | 1 % |
+
+Paused renderers are stopped processes: zero CPU by construction, and the GPU returns to the idle
+baseline. The web wallpaper is the expensive one; WebKit renders its canvas at the monitor's
+refresh rate with no FPS cap, which is listed as a limitation.
+
+Both RPMs build with `just rpm`: `stagehand` (4 MB) and `stagehand-scene-renderer` (97 MB, CEF
+stripped from 1.4 GB to 220 MB).
+
+## 7. Known failures
+
+- `default:neon_sunset`, `default:dino_run` and other unpacked default projects may fail inside
+  linux-wallpaperengine ("Projection must have a width"). The daemon keeps the previous wallpaper
+  running and reports the failure; three restart attempts are made with backoff. The full sweep of
+  the library is in §8.
+- `781890571` has `"general": null`; it parses as a video wallpaper with no properties and plays.
+- `default:audiophile`, `default:sheep`, `default:techno` have no `type` and are listed as
+  unsupported; `sheep` is an `application` wallpaper by content.

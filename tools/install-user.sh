@@ -6,14 +6,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 mkdir -p "$BIN" "$LIBEXEC" "$DATA/applications" "$DATA/dbus-1/services" "$DATA/icons/hicolor/scalable/apps" \
     "$DATA/gnome-shell/extensions" "$CONFIG/systemd/user" "$DATA/metainfo"
-install -m 755 "$ROOT/target/release/wpe-gnomed" "$ROOT/target/release/wpe-gnome" \
-    "$ROOT/target/release/wpe-gnome-renderer" "$ROOT/target/release/wpe-gnomectl" "$BIN/"
-sed "s|@BINDIR@|$BIN|g" "$ROOT/data/io.github.realistik.WpeGnome.Daemon.service" \
-    > "$DATA/dbus-1/services/io.github.realistik.WpeGnome.Daemon.service"
-sed "s|@BINDIR@|$BIN|g" "$ROOT/data/wpe-gnomed.service" > "$CONFIG/systemd/user/wpe-gnomed.service"
-install -m 644 "$ROOT/data/io.github.realistik.WpeGnome.desktop" "$DATA/applications/"
-install -m 644 "$ROOT/data/io.github.realistik.WpeGnome.svg" "$DATA/icons/hicolor/scalable/apps/"
-install -m 644 "$ROOT/data/io.github.realistik.WpeGnome.metainfo.xml" "$DATA/metainfo/"
+install -m 755 "$ROOT/target/release/stagehandd" "$ROOT/target/release/stagehand" \
+    "$ROOT/target/release/stagehand-renderer" "$ROOT/target/release/stagehandctl" "$BIN/"
+sed "s|@BINDIR@|$BIN|g" "$ROOT/data/io.github.realistikdash.Stagehand.Daemon.service" \
+    > "$DATA/dbus-1/services/io.github.realistikdash.Stagehand.Daemon.service"
+sed "s|@BINDIR@|$BIN|g" "$ROOT/data/stagehandd.service" > "$CONFIG/systemd/user/stagehandd.service"
+install -m 644 "$ROOT/data/io.github.realistikdash.Stagehand.desktop" "$DATA/applications/"
+install -m 644 "$ROOT/data/io.github.realistikdash.Stagehand.svg" "$DATA/icons/hicolor/scalable/apps/"
+install -m 644 "$ROOT/data/io.github.realistikdash.Stagehand.metainfo.xml" "$DATA/metainfo/"
 rm -rf "${DATA:?}/gnome-shell/extensions/$UUID"
 cp -r "$ROOT/extension/$UUID" "$DATA/gnome-shell/extensions/$UUID"
 
@@ -27,11 +27,11 @@ fi
 update-desktop-database "$DATA/applications" 2>/dev/null || true
 gtk-update-icon-cache -q -t "$DATA/icons/hicolor" 2>/dev/null || true
 systemctl --user daemon-reload
-systemctl --user enable --now wpe-gnomed.service
+systemctl --user enable --now stagehandd.service
 gnome-extensions enable "$UUID" 2>/dev/null || true
 cat <<MSG
 
 Installed. The Shell extension is enabled but GNOME on Wayland loads new extensions only at
-login: log out and back in once, then open "Wallpaper Engine" from the app grid.
+login: log out and back in once, then open "Stagehand" from the app grid.
 Recovery from a TTY if the Shell misbehaves:  gnome-extensions disable $UUID
 MSG

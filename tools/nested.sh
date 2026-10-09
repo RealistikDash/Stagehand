@@ -9,21 +9,21 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UUID="wpe-gnome@realistik.github.io"
+UUID="stagehand@realistikdash.github.io"
 EXT_SRC="$ROOT/extension/$UUID"
 EXT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$UUID"
-LOG="${WPE_NESTED_LOG:-/tmp/wpe-gnome-nested.log}"
+LOG="${STAGEHAND_NESTED_LOG:-/tmp/stagehand-nested.log}"
 
 mkdir -p "$(dirname "$EXT_DIR")"
 rm -rf "$EXT_DIR"
 cp -r "$EXT_SRC" "$EXT_DIR"
 
 export DCONF_PROFILE="$ROOT/tools/nested-dconf-profile"
-export WPE_GNOME_DEVKIT=1
+export STAGEHAND_DEVKIT=1
 export GTK_A11Y=none
 export NO_AT_BRIDGE=1
-export WPE_ROOT="$ROOT"
-export WPE_UUID="$UUID"
-export WPE_LOG="$LOG"
+export STAGEHAND_ROOT="$ROOT"
+export STAGEHAND_UUID="$UUID"
+export STAGEHAND_LOG="$LOG"
 
 exec dbus-run-session -- bash "$ROOT/tools/nested-inner.sh" "$@"

@@ -7,12 +7,12 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.98"
 license = "MIT"
-repository = "https://github.com/realistik/wpe-gnome"
-authors = ["realistik"]
+repository = "https://github.com/RealistikDash/Stagehand"
+authors = ["RealistikDash"]
 
 [workspace.dependencies]
-wpe-gnome-core = { path = "crates/wpe-gnome-core" }
-wpe-gnome-ipc = { path = "crates/wpe-gnome-ipc" }
+stagehand-core = { path = "crates/stagehand-core" }
+stagehand-ipc = { path = "crates/stagehand-ipc" }
 
 async-channel = "2"
 clap = { version = "4", features = ["derive"] }

@@ -1,4 +1,4 @@
-# wpe-gnome
+# Stagehand
 
 Steam Wallpaper Engine wallpapers as the real GNOME desktop background, on Wayland.
 
@@ -6,13 +6,13 @@ Scene, video and web wallpapers from your Workshop subscriptions run behind ever
 the overview and workspace switcher, never appear in Alt-Tab or the dash, follow each monitor,
 pause when covered, locked or idle, and come back at login.
 
-- `wpe-gnomed`: the daemon. Discovers wallpapers, tracks monitors, starts and pauses renderers,
+- `stagehandd`: the daemon. Discovers wallpapers, tracks monitors, starts and pauses renderers,
   owns the configuration, exposes a D-Bus API. Runs as a systemd user service.
-- `wpe-gnome`: the GTK4/libadwaita settings app. A client of the daemon only.
-- `wpe-gnome-renderer`: GTK window renderer for videos (GStreamer) and web wallpapers (WebKitGTK).
+- `stagehand`: the GTK4/libadwaita settings app. A client of the daemon only.
+- `stagehand-renderer`: GTK window renderer for videos (GStreamer) and web wallpapers (WebKitGTK).
 - `linux-wallpaperengine`: renders scenes, started as a separate process (GPL-3.0, not linked).
 - A GNOME Shell extension that pins renderer windows into every background.
-- `wpe-gnomectl`: command line client.
+- `stagehandctl`: command line client.
 
 See `docs/design.md` for how it works and what was verified on the development machine.
 
@@ -53,7 +53,7 @@ just install    # builds in release mode, installs to ~/.local, enables the unit
 ```
 
 Log out and back in once: GNOME on Wayland loads new extensions only at login. Then open
-"Wallpaper Engine" from the app grid, pick a wallpaper and apply it to a monitor.
+"Stagehand" from the app grid, pick a wallpaper and apply it to a monitor.
 
 `just uninstall` removes everything and restores the background keys that were in place before
 the first wallpaper was applied.
@@ -66,23 +66,23 @@ just rpm
 sudo dnf install $(find target/rpm/RPMS -name '*.rpm')
 ```
 
-`wpe-gnome` installs the daemon, app, renderer, CLI, extension, D-Bus activation file and a
+`stagehand` installs the daemon, app, renderer, CLI, extension, D-Bus activation file and a
 systemd user unit with a preset, so the daemon starts with every graphical session. On its first
-start it enables the Shell extension. `wpe-gnome-scene-renderer` is linux-wallpaperengine under
-`/usr/libexec/wpe-gnome`. Both builds need network access (crates are vendored by the script, CEF
+start it enables the Shell extension. `stagehand-scene-renderer` is linux-wallpaperengine under
+`/usr/libexec/stagehand`. Both builds need network access (crates are vendored by the script, CEF
 is downloaded by linux-wallpaperengine's CMake).
 
 ## Command line
 
 ```
-wpe-gnomectl list                 # every wallpaper, with support status
-wpe-gnomectl show workshop:<id>   # properties of one wallpaper
-wpe-gnomectl monitors             # connected monitors and their assignment keys
-wpe-gnomectl apply workshop:<id> --monitor '<key>'
-wpe-gnomectl apply workshop:<id> --span
-wpe-gnomectl status
-wpe-gnomectl stop
-wpe-gnomectl restore-background
+stagehandctl list                 # every wallpaper, with support status
+stagehandctl show workshop:<id>   # properties of one wallpaper
+stagehandctl monitors             # connected monitors and their assignment keys
+stagehandctl apply workshop:<id> --monitor '<key>'
+stagehandctl apply workshop:<id> --span
+stagehandctl status
+stagehandctl stop
+stagehandctl restore-background
 ```
 
 ## Development
@@ -100,11 +100,11 @@ Shell with a private D-Bus session and a private dconf database.
 If the Shell misbehaves after an update, from a TTY (Ctrl+Alt+F3):
 
 ```
-gnome-extensions disable wpe-gnome@realistik.github.io
-systemctl --user stop wpe-gnomed.service
+gnome-extensions disable stagehand@realistikdash.github.io
+systemctl --user stop stagehandd.service
 ```
 
-To put the original background back: `wpe-gnomectl restore-background`.
+To put the original background back: `stagehandctl restore-background`.
 
 ## Known limitations
 

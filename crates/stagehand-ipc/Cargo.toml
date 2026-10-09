@@ -1,0 +1,17 @@
+[package]
+name = "stagehand-ipc"
+description = "D-Bus interface definitions shared by the stagehand daemon and its clients"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+stagehand-core.workspace = true
+zbus.workspace = true
+
+[lints]
+workspace = true

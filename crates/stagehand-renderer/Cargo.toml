@@ -1,0 +1,26 @@
+[package]
+name = "stagehand-renderer"
+description = "GTK4 window renderer for video and web wallpapers, driven by stagehandd"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+async-channel.workspace = true
+clap.workspace = true
+gdk-pixbuf.workspace = true
+gio.workspace = true
+glib.workspace = true
+gstreamer.workspace = true
+gstreamer-video.workspace = true
+gtk4.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+webkit6.workspace = true
+stagehand-core.workspace = true
+
+[lints]
+workspace = true

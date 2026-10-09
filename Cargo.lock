@@ -1661,6 +1661,107 @@ dependencies = [
 ]
 
 [[package]]
+name = "stagehand"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "futures-lite",
+ "gdk-pixbuf",
+ "gio",
+ "glib",
+ "gtk4",
+ "libadwaita",
+ "serde_json",
+ "stagehand-core",
+ "stagehand-ipc",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+ "zbus",
+]
+
+[[package]]
+name = "stagehand-core"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "image",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "stagehand-ipc"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "stagehand-core",
+ "thiserror",
+ "zbus",
+]
+
+[[package]]
+name = "stagehand-renderer"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "clap",
+ "gdk-pixbuf",
+ "gio",
+ "glib",
+ "gstreamer",
+ "gstreamer-video",
+ "gtk4",
+ "serde_json",
+ "stagehand-core",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+ "webkit6",
+]
+
+[[package]]
+name = "stagehandctl"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "serde_json",
+ "smol",
+ "stagehand-core",
+ "stagehand-ipc",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+ "zbus",
+]
+
+[[package]]
+name = "stagehandd"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "async-signal",
+ "clap",
+ "futures-lite",
+ "gio",
+ "notify",
+ "rustix",
+ "serde",
+ "serde_json",
+ "smol",
+ "stagehand-core",
+ "stagehand-ipc",
+ "thiserror",
+ "tracing",
+ "tracing-journald",
+ "tracing-subscriber",
+ "zbus",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2142,107 +2243,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "wpe-gnome"
-version = "0.1.0"
-dependencies = [
- "async-channel",
- "futures-lite",
- "gdk-pixbuf",
- "gio",
- "glib",
- "gtk4",
- "libadwaita",
- "serde_json",
- "thiserror",
- "tracing",
- "tracing-subscriber",
- "wpe-gnome-core",
- "wpe-gnome-ipc",
- "zbus",
-]
-
-[[package]]
-name = "wpe-gnome-core"
-version = "0.1.0"
-dependencies = [
- "async-channel",
- "image",
- "serde",
- "serde_json",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "wpe-gnome-ipc"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror",
- "wpe-gnome-core",
- "zbus",
-]
-
-[[package]]
-name = "wpe-gnome-renderer"
-version = "0.1.0"
-dependencies = [
- "async-channel",
- "clap",
- "gdk-pixbuf",
- "gio",
- "glib",
- "gstreamer",
- "gstreamer-video",
- "gtk4",
- "serde_json",
- "thiserror",
- "tracing",
- "tracing-subscriber",
- "webkit6",
- "wpe-gnome-core",
-]
-
-[[package]]
-name = "wpe-gnomectl"
-version = "0.1.0"
-dependencies = [
- "clap",
- "serde_json",
- "smol",
- "thiserror",
- "tracing",
- "tracing-subscriber",
- "wpe-gnome-core",
- "wpe-gnome-ipc",
- "zbus",
-]
-
-[[package]]
-name = "wpe-gnomed"
-version = "0.1.0"
-dependencies = [
- "async-channel",
- "async-signal",
- "clap",
- "futures-lite",
- "gio",
- "notify",
- "rustix",
- "serde",
- "serde_json",
- "smol",
- "thiserror",
- "tracing",
- "tracing-journald",
- "tracing-subscriber",
- "wpe-gnome-core",
- "wpe-gnome-ipc",
- "zbus",
 ]
 
 [[package]]

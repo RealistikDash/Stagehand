@@ -9,7 +9,7 @@ cleanup() {
         sleep 0.5
     done
     kill -KILL "$DAEMON_PID" 2>/dev/null || true
-    pkill -KILL -f 'wpe-gnome-renderer --arguments' 2>/dev/null || true
+    pkill -KILL -f 'stagehand-renderer --arguments' 2>/dev/null || true
     kill -TERM "$SHELL_PID" 2>/dev/null || true
     wait "$SHELL_PID" 2>/dev/null || true
     # A Shell killed before it finished starting leaves this marker and the next Shell start
@@ -19,7 +19,7 @@ cleanup() {
 trap cleanup EXIT
 
 # shellcheck disable=SC2086
-gnome-shell --devkit ${WPE_SHELL_ARGS:-} >"$WPE_LOG" 2>&1 &
+gnome-shell --devkit ${STAGEHAND_SHELL_ARGS:-} >"$STAGEHAND_LOG" 2>&1 &
 SHELL_PID=$!
 
 for _ in $(seq 1 60); do
@@ -30,20 +30,20 @@ for _ in $(seq 1 60); do
     sleep 0.5
 done
 
-WAYLAND=$(grep -oE "Using Wayland display name '[^']+'" "$WPE_LOG" | head -1 | sed "s/.*'\(.*\)'/\1/")
+WAYLAND=$(grep -oE "Using Wayland display name '[^']+'" "$STAGEHAND_LOG" | head -1 | sed "s/.*'\(.*\)'/\1/")
 export WAYLAND_DISPLAY="${WAYLAND:-wayland-1}"
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=GNOME
 sleep 3
-gnome-extensions enable "$WPE_UUID"
+gnome-extensions enable "$STAGEHAND_UUID"
 sleep 1
-gnome-extensions info "$WPE_UUID" | grep -E 'State|Enabled' || true
+gnome-extensions info "$STAGEHAND_UUID" | grep -E 'State|Enabled' || true
 
-SCENE="${WPE_SCENE_RENDERER:-$HOME/.local/libexec/wpe-gnome/lwe/linux-wallpaperengine}"
-RUST_LOG="${RUST_LOG:-debug}" "$WPE_ROOT/target/${WPE_PROFILE:-debug}/wpe-gnomed" --scene-renderer "$SCENE" >"$WPE_LOG.daemon" 2>&1 &
+SCENE="${STAGEHAND_SCENE_RENDERER:-$HOME/.local/libexec/stagehand/lwe/linux-wallpaperengine}"
+RUST_LOG="${RUST_LOG:-debug}" "$STAGEHAND_ROOT/target/${STAGEHAND_PROFILE:-debug}/stagehandd" --scene-renderer "$SCENE" >"$STAGEHAND_LOG.daemon" 2>&1 &
 DAEMON_PID=$!
 sleep 2
-echo "Nested Shell pid $SHELL_PID, daemon pid $DAEMON_PID, Wayland $WAYLAND_DISPLAY, log $WPE_LOG"
+echo "Nested Shell pid $SHELL_PID, daemon pid $DAEMON_PID, Wayland $WAYLAND_DISPLAY, log $STAGEHAND_LOG"
 
 if [ $# -gt 0 ]; then
     "$@"

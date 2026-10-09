@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.realistikdash.Stagehand</id>
+  <name>Stagehand</name>
+  <summary>Steam Wallpaper Engine wallpapers as live GNOME backgrounds</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>Shows the scene, video and web wallpapers you subscribe to in the Steam Workshop as the real GNOME desktop background, behind every window, in the overview and on every monitor.</p>
+  </description>
+  <launchable type="desktop-id">io.github.realistikdash.Stagehand.desktop</launchable>
+  <url type="homepage">https://github.com/RealistikDash/Stagehand</url>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+  <content_rating type="oars-1.1"/>
+</component>
