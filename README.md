@@ -1,67 +1,85 @@
 # Stagehand
 
-Steam Wallpaper Engine wallpapers as the real GNOME desktop background, on Wayland.
+Use your Steam Wallpaper Engine wallpapers as the desktop background on GNOME.
 
-<img width="3440" height="1440" alt="image" src="https://github.com/user-attachments/assets/698b0ef5-ed50-4ee0-bd8b-3dee67046cdc" />
+<img width="3440" height="1440" alt="Stagehand running a scene wallpaper on GNOME" src="https://github.com/user-attachments/assets/698b0ef5-ed50-4ee0-bd8b-3dee67046cdc" />
 
+Stagehand finds the wallpapers you are subscribed to in the Steam Workshop and plays them behind
+your windows, like a normal GNOME background. Scene, video and web wallpapers are supported. They
+show up in the overview and the workspace switcher, stay out of Alt-Tab, can be set per monitor
+or stretched across all of them, pause when they are covered or you are away, and come back when
+you log in.
 
-Scene, video and web wallpapers from your Workshop subscriptions run behind every window, show in
-the overview and workspace switcher, never appear in Alt-Tab or the dash, follow each monitor,
-pause when covered, locked or idle, and come back at login.
+## Download
 
-- `stagehandd`: the daemon. Discovers wallpapers, tracks monitors, starts and pauses renderers,
-  owns the configuration, exposes a D-Bus API. Runs as a systemd user service.
-- `stagehand`: the GTK4/libadwaita settings app. A client of the daemon only.
-- `stagehand-renderer`: GTK window renderer for videos (GStreamer) and web wallpapers (WebKitGTK).
-- `linux-wallpaperengine`: renders scenes, started as a separate process (GPL-3.0, not linked).
-- A GNOME Shell extension that pins renderer windows into every background.
-- `stagehandctl`: command line client.
+Stagehand runs on Fedora 44 with GNOME 50 on Wayland, which is the default desktop on Fedora
+Workstation. You also need Steam with some Wallpaper Engine wallpapers subscribed and downloaded.
 
-See `docs/design.md` for how it works and what was verified on the development machine.
+1. Go to the [latest release](https://github.com/RealistikDash/Stagehand/releases/latest) and
+   download the two `.rpm` files, `stagehand` and `stagehand-scene-renderer`.
+2. Open the Downloads folder and double-click each file to install it, or run this in a terminal:
 
-## Requirements
+   ```
+   sudo dnf install ~/Downloads/stagehand-*.rpm
+   ```
 
-Fedora 44 with GNOME 50 on Wayland. Build dependencies:
+3. Log out and back in. Open **Stagehand** from the app grid, pick a wallpaper and press
+   **Apply**.
 
-```
-sudo dnf install cargo rust gtk4-devel libadwaita-devel webkitgtk6.0-devel \
-    gstreamer1-devel gstreamer1-plugins-base-devel graphene-devel just \
-    gstreamer1-plugin-gtk4 gstreamer1-plugins-good gstreamer1-plugins-bad-free
-```
-
-Hardware video decoding and H.264 need RPM Fusion:
+Most video wallpapers use the H.264 format, which Fedora cannot play out of the box. To play
+them, enable [RPM Fusion](https://rpmfusion.org/Configuration) and install the codecs:
 
 ```
 sudo dnf install mesa-va-drivers-freeworld gstreamer1-plugin-libav gstreamer1-plugins-ugly
 ```
 
-Scene wallpapers need linux-wallpaperengine, which `just lwe` builds from a pinned commit:
+## Build from source
 
-```
-sudo dnf install cmake ninja-build gcc-c++ glew-devel freeglut-devel SDL2-devel mpv-libs-devel \
-    ffmpeg-free-devel pulseaudio-libs-devel fftw-devel gmp-devel lz4-devel zlib-ng-compat-devel \
-    libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel libXxf86vm-devel dbus-devel \
-    glfw-devel glm-devel freetype-devel mesa-libEGL-devel mesa-libGL-devel wayland-devel \
-    wayland-protocols-devel libwebp-devel
-```
+Only needed if you want the newest unreleased code or you are on a different Fedora version.
+Otherwise skip to [Using Stagehand](#using-stagehand).
 
-The import formatting options need a nightly `rustfmt`: `rustup toolchain install nightly
---profile minimal -c rustfmt`.
+1. Install the build tools and libraries:
 
-## Install for the current user
+   ```
+   sudo dnf install cargo rust gtk4-devel libadwaita-devel webkitgtk6.0-devel \
+       gstreamer1-devel gstreamer1-plugins-base-devel graphene-devel just \
+       gstreamer1-plugin-gtk4 gstreamer1-plugins-good gstreamer1-plugins-bad-free
+   ```
 
-```
-just lwe        # optional, scene support: builds linux-wallpaperengine without its CEF web support
-just install    # builds in release mode, installs to ~/.local, enables the unit and extension
-```
+2. For video wallpapers, enable [RPM Fusion](https://rpmfusion.org/Configuration) and install
+   the codecs and hardware decoding drivers:
 
-Log out and back in once: GNOME on Wayland loads new extensions only at login. Then open
-"Stagehand" from the app grid, pick a wallpaper and apply it to a monitor.
+   ```
+   sudo dnf install mesa-va-drivers-freeworld gstreamer1-plugin-libav gstreamer1-plugins-ugly
+   ```
 
-`just uninstall` removes everything and restores the background keys that were in place before
-the first wallpaper was applied.
+3. For scene wallpapers, which are the most common kind, install the extra dependencies and
+   build the scene renderer:
 
-## Install as RPMs
+   ```
+   sudo dnf install cmake ninja-build gcc-c++ glew-devel freeglut-devel SDL2-devel mpv-libs-devel \
+       ffmpeg-free-devel pulseaudio-libs-devel fftw-devel gmp-devel lz4-devel zlib-ng-compat-devel \
+       libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel libXxf86vm-devel dbus-devel \
+       glfw-devel glm-devel freetype-devel mesa-libEGL-devel mesa-libGL-devel wayland-devel \
+       wayland-protocols-devel libwebp-devel
+   just lwe
+   ```
+
+   This downloads and builds [linux-wallpaperengine](https://github.com/Almamu/linux-wallpaperengine),
+   which Stagehand uses to render scenes. It takes a few minutes. Skip this step if you only use
+   video or web wallpapers.
+
+4. Build and install Stagehand for your user:
+
+   ```
+   just install
+   ```
+
+5. Log out and back in. GNOME only loads new extensions at login.
+
+### Build the RPM packages yourself
+
+If you prefer packages you can remove with `dnf`:
 
 ```
 sudo dnf install rpm-build rpmdevtools libappstream-glib desktop-file-utils systemd-rpm-macros
@@ -69,55 +87,105 @@ just rpm
 sudo dnf install $(find target/rpm/RPMS -name '*.rpm')
 ```
 
-`stagehand` installs the daemon, app, renderer, CLI, extension, D-Bus activation file and a
-systemd user unit with a preset, so the daemon starts with every graphical session. On its first
-start it enables the Shell extension. `stagehand-scene-renderer` is linux-wallpaperengine under
-`/usr/libexec/stagehand`, built with `packaging/lwe-no-cef.patch`, which adds an `ENABLE_CEF`
-option so the Chromium Embedded Framework (only needed for linux-wallpaperengine's own web
-support) is neither downloaded nor bundled. The build script needs network access for `cargo
-vendor` and the linux-wallpaperengine checkout.
+This builds two packages: `stagehand` and `stagehand-scene-renderer`. The build needs network
+access. Log out and back in afterwards.
 
-## Command line
+## Using Stagehand
+
+Open **Stagehand** from the app grid. The **Library** page lists every wallpaper from your Steam
+Workshop subscriptions. Pick one, choose a monitor or **All monitors**, and press **Apply**.
+Wallpapers that cannot run on Linux are marked **Not supported**.
+
+Things you can change in the app:
+
+- **Monitors**: a different wallpaper per monitor, or one wallpaper spanning all of them.
+- **Properties**: the colour, speed and other options the wallpaper author exposes.
+- **Audio**: volume, mute, and mute automatically when another app plays sound.
+- **Pause**: pause the wallpaper when a window covers it, when the screen is locked, or when
+  you are idle.
+- **OLED care**: dim the wallpaper, and hide the frozen frame after a while when paused.
+- **Rendering**: frame rate limit and how a wallpaper fills a monitor of a different shape.
+- **Start at login**: whether the wallpaper service starts with your session.
+
+Pressing **Stop All** stops every wallpaper. To put the GNOME background you had before back,
+run `stagehandctl restore-background` in a terminal.
+
+### Command line
+
+`stagehandctl` does the same things from a terminal, which is handy for scripts and keyboard
+shortcuts:
 
 ```
-stagehandctl list                 # every wallpaper, with support status
-stagehandctl show workshop:<id>   # properties of one wallpaper
-stagehandctl monitors             # connected monitors and their assignment keys
+stagehandctl list                              # your wallpapers, with support status
+stagehandctl monitors                          # connected monitors and their keys
 stagehandctl apply workshop:<id> --monitor '<key>'
-stagehandctl apply workshop:<id> --span
+stagehandctl apply workshop:<id> --span        # one wallpaper across all monitors
 stagehandctl status
 stagehandctl stop
+stagehandctl restore-background                # put the original GNOME background back
+```
+
+The `<id>` is the number at the end of a wallpaper's Steam Workshop URL. `stagehandctl list`
+prints it for every wallpaper.
+
+## Uninstall
+
+If you installed the downloaded packages:
+
+```
 stagehandctl restore-background
+sudo dnf remove stagehand stagehand-scene-renderer
 ```
 
-## Development
+If you built from source with `just install`, run `just uninstall` instead. It removes everything
+Stagehand installed and restores the background you had before.
+
+## If something goes wrong
+
+**The wallpaper does not appear after installing.** Log out and back in. If it still does not
+show, check that the extension is enabled:
 
 ```
-just nested     # nested GNOME Shell (devkit) with the extension and daemon, isolated dconf
-just lint       # cargo +nightly fmt --check, clippy -D warnings
+gnome-extensions enable stagehand@realistikdash.github.io
+systemctl --user restart stagehandd.service
 ```
 
-Never test extension changes in the live session first; `just nested` runs them in a nested
-Shell with a private D-Bus session and a private dconf database.
+**A video wallpaper is black or stutters.** Make sure the RPM Fusion codecs from step 2 are
+installed. Most Workshop videos are H.264, which Fedora cannot play out of the box.
 
-## Recovery
+**A scene wallpaper is listed as not supported.** Scenes need the `stagehand-scene-renderer`
+package from the release. If you built from source, run `just lwe` and then `just install` again.
 
-If the Shell misbehaves after an update, from a TTY (Ctrl+Alt+F3):
+**GNOME Shell misbehaves after an update.** Switch to a text console with Ctrl+Alt+F3, log in,
+and run:
 
 ```
 gnome-extensions disable stagehand@realistikdash.github.io
 systemctl --user stop stagehandd.service
 ```
 
-To put the original background back: `stagehandctl restore-background`.
+Then switch back with Ctrl+Alt+F2 (or F1). `stagehandctl restore-background` puts your original
+background back at any time.
 
 ## Known limitations
 
-- `application` wallpapers are Windows executables and are listed as unsupported.
-- Scene properties and audio settings restart linux-wallpaperengine (it has no live channel);
-  the extension crossfades the new renderer in.
-- Web wallpapers receive their properties but no audio data; the FPS cap does not apply to them.
-- The still image for the lock screen and static blur is a frame captured a few seconds after the
-  renderer starts; until then the Workshop preview is used.
-- One wallpaper audio volume applies to all monitors.
-- Steam libraries on drives that are not mounted are skipped until the next rescan.
+- "Application" wallpapers are Windows programs and cannot run.
+- Changing the properties or audio settings of a scene wallpaper restarts it briefly. Stagehand
+  crossfades to the new one.
+- Web wallpapers do not react to audio, and the frame rate limit does not apply to them.
+- The lock screen and blurred backgrounds show a still frame captured a few seconds after the
+  wallpaper starts. Until then the Workshop preview image is used.
+- Wallpaper volume is one setting for all monitors.
+- Steam libraries on unmounted drives are skipped until the next rescan.
+
+## For developers
+
+See `docs/design.md` for how Stagehand works, what was verified and measured, and the pitfalls
+found along the way. `just nested` runs a nested GNOME Shell with the extension and daemon for
+safe testing, and `just lint` runs the formatter and clippy. Never test extension changes in your
+live session first.
+
+## Licence
+
+Stagehand is licensed under the terms in `LICENSE`. linux-wallpaperengine is a separate GPL-3.0
+program that Stagehand starts as a child process.
