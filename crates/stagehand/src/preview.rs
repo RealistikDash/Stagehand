@@ -38,12 +38,16 @@ pub fn is_animated(path: &Path) -> bool {
 type PendingFrame = Rc<RefCell<Option<glib::SourceId>>>;
 
 /// Plays a GIF into a picture until [`Animation::stop`] is called.
+///
+/// Every frame is scaled to `size`, the dimensions of the still texture the picture shows
+/// otherwise. A picture's natural size follows its paintable, so a frame of a different size
+/// would resize the card, shift the grid under the pointer and fire leave/enter in a loop.
 pub struct Animation {
     pending: PendingFrame,
 }
 
 impl Animation {
-    pub fn start(path: &Path, picture: &gtk4::Picture) -> Option<Self> {
+    pub fn start(path: &Path, picture: &gtk4::Picture, size: (i32, i32)) -> Option<Self> {
         let animation = PixbufAnimation::from_file(path).ok()?;
 
         if animation.is_static_image() {
@@ -51,7 +55,7 @@ impl Animation {
         }
 
         let pending: PendingFrame = Rc::new(RefCell::new(None));
-        schedule_frame(animation.iter(None), picture.clone(), &pending);
+        schedule_frame(animation.iter(None), picture.clone(), size, &pending);
 
         Some(Self { pending })
     }
@@ -68,6 +72,7 @@ impl Animation {
 fn schedule_frame(
     iterator: gdk_pixbuf::PixbufAnimationIter,
     picture: gtk4::Picture,
+    size: (i32, i32),
     pending: &PendingFrame,
 ) {
     let delay = iterator
@@ -76,9 +81,20 @@ fn schedule_frame(
     let next = Rc::clone(pending);
     let source = glib::timeout_add_local_once(delay, move || {
         iterator.advance(SystemTime::now());
-        picture.set_paintable(texture_from_pixbuf(&iterator.pixbuf()).as_ref());
+        let frame = iterator.pixbuf();
+        let (width, height) = size;
+        let scaled = if frame.width() == width && frame.height() == height {
+            Some(frame)
+        } else {
+            frame.scale_simple(width, height, gdk_pixbuf::InterpType::Bilinear)
+        };
+        picture.set_paintable(
+            scaled
+                .and_then(|frame| texture_from_pixbuf(&frame))
+                .as_ref(),
+        );
         *next.borrow_mut() = None;
-        schedule_frame(iterator, picture, &next);
+        schedule_frame(iterator, picture, size, &next);
     });
     *pending.borrow_mut() = Some(source);
 }

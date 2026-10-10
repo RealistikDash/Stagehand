@@ -397,11 +397,18 @@ fn attach_preview(
     let enter_path = path.clone();
     let enter_picture = picture.clone();
     let enter_running = Rc::clone(&running);
+    let enter_still = Rc::clone(&still);
     motion.connect_enter(move |_, _, _| {
         let mut running = enter_running.borrow_mut();
+        // Frames are scaled to the still's size; until the still is decoded there is nothing
+        // to match, and the card would resize, so the GIF waits for the next hover.
+        let size = enter_still
+            .borrow()
+            .as_ref()
+            .map(|still| (still.width(), still.height()));
 
-        if running.is_none() {
-            *running = Animation::start(&enter_path, &enter_picture);
+        if let (None, Some(size)) = (running.as_ref(), size) {
+            *running = Animation::start(&enter_path, &enter_picture, size);
         }
     });
     let leave_picture = picture.clone();
