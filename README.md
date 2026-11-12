@@ -12,7 +12,7 @@ you log in.
 
 ## Download
 
-Stagehand runs on Fedora 44 with GNOME 50 on Wayland, which is the default desktop on Fedora
+Stagehand runs on Fedora 44 and 45 with GNOME 50 or 51 on Wayland, which is the default desktop on Fedora
 Workstation. You also need Steam with some Wallpaper Engine wallpapers subscribed and downloaded.
 
 1. Go to the [latest release](https://github.com/RealistikDash/Stagehand/releases/latest) and
