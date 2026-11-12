@@ -3,7 +3,7 @@
 %global lwedir %{_libexecdir}/stagehand/lwe
 
 Name:           stagehand-scene-renderer
-Version:        0.1.0
+Version:        0.1.1
 Release:        1.git%{shortcommit}%{?dist}
 Summary:        linux-wallpaperengine build used by stagehand for scene wallpapers
 # linux-wallpaperengine is GPL-3.0-only; it runs as a separate process started by stagehand.
@@ -88,5 +88,8 @@ exit 0
 %{lwedir}/
 
 %changelog
+* Thu Nov 12 2026 RealistikDash - 0.1.1-1.gitb016d7d
+- Rebuild against Fedora 45 libraries (ffmpeg 9).
+
 * Fri Oct 09 2026 RealistikDash - 0.1.0-1.gitb016d7d
 - Initial package.

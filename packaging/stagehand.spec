@@ -2,7 +2,7 @@
 %global appid io.github.realistikdash.Stagehand
 
 Name:           stagehand
-Version:        0.1.0
+Version:        0.1.1
 Release:        1%{?dist}
 Summary:        Steam Wallpaper Engine wallpapers as live GNOME backgrounds
 License:        MIT
@@ -102,5 +102,8 @@ appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/%{appid}.metai
 %{_datadir}/gnome-shell/extensions/%{uuid}/
 
 %changelog
+* Thu Nov 12 2026 RealistikDash - 0.1.1-1
+- Support GNOME Shell 51 (Fedora 45).
+
 * Fri Oct 09 2026 RealistikDash - 0.1.0-1
 - Initial package.
